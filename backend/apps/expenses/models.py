@@ -5,6 +5,8 @@ from django.db import models
 from apps.core.models import BaseModel
 
 from .constants import (
+    PAYMENT_LEDGER_DRAFT,
+    PAYMENT_LEDGER_STATUS_CHOICES,
     PAYMENT_METHOD_CASH,
     PAYMENT_METHOD_CHOICES,
     PAYMENT_STATUS_CHOICES,
@@ -123,7 +125,7 @@ class Expense(BaseModel):
 
 
 class ExpensePayment(BaseModel):
-    """Payment made against an expense."""
+    """Payment made against an expense. Ledger status: draft (no ledger) or posted (AP dr, Cash cr)."""
 
     expense = models.ForeignKey(
         Expense,
@@ -138,6 +140,11 @@ class ExpensePayment(BaseModel):
         default=Decimal("0.00"),
     )
     reference = models.CharField(max_length=128, blank=True)
+    status = models.IntegerField(
+        choices=PAYMENT_LEDGER_STATUS_CHOICES,
+        db_index=True,
+        default=PAYMENT_LEDGER_DRAFT,
+    )
 
     class Meta:
         db_table = "expenses_expensepayment"

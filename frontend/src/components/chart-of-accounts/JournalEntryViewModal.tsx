@@ -25,7 +25,7 @@ export default function JournalEntryViewModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+      className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto"
     >
       <div className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">

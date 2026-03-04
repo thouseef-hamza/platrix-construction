@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { Modal } from "@/components/ui/modal";
+import ConfirmPostModal from "@/components/purchase/ConfirmPostModal";
 import Label from "@/components/form/Label";
 import DatePicker from "@/components/form/date-picker";
 import type { Expense, ExpenseCategory, ProjectRef, EmployeeRef } from "@/types/expense";
@@ -23,6 +24,7 @@ interface ExpenseCreateModalProps {
   onClose: () => void;
   projects: ProjectRef[];
   employees: EmployeeRef[];
+  isSubmitting?: boolean;
   onCreate: (data: Omit<Expense, "id">) => void;
 }
 
@@ -31,6 +33,7 @@ export default function ExpenseCreateModal({
   onClose,
   projects,
   employees,
+  isSubmitting = false,
   onCreate,
 }: ExpenseCreateModalProps) {
   const [category, setCategory] = useState<ExpenseCategory>("general");
@@ -45,6 +48,18 @@ export default function ExpenseCreateModal({
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank">("cash");
   const [paidAmount, setPaidAmount] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
+  const [showPostConfirm, setShowPostConfirm] = useState(false);
+  const [errors, setErrors] = useState<{
+    description?: string;
+    date?: string;
+    amount?: string;
+    project?: string;
+    employee?: string;
+    quantity?: string;
+    rate?: string;
+  }>({});
+  const formRef = useRef<HTMLFormElement>(null);
+  const submitActionRef = useRef<"draft" | "posted">("draft");
 
   const isProject = category === "project";
   const isLabor = category === "outsourced_labor";
@@ -64,6 +79,26 @@ export default function ExpenseCreateModal({
   const paidAmountNum = parseFloat(paidAmount) || 0;
   const balance = totalAmount - paidAmountNum;
 
+  type ValidationErrors = typeof errors;
+  const runValidation = useCallback((): { valid: boolean; newErrors: ValidationErrors } => {
+    const newErrors: ValidationErrors = {};
+    if (!description?.trim()) newErrors.description = "Description is required.";
+    if (!date?.trim()) newErrors.date = "Date is required.";
+    if (isProject && !projectId?.trim()) newErrors.project = "Project is required.";
+    if (isEmployeePaid && !employeeId?.trim()) newErrors.employee = "Employee is required.";
+    if (!isLabor) {
+      const amt = parseFloat(amount) || 0;
+      if (amt <= 0) newErrors.amount = "Amount must be greater than 0.";
+    } else {
+      const q = parseFloat(quantity) || 0;
+      const r = parseFloat(rate) || 0;
+      if (q <= 0) newErrors.quantity = "Quantity must be greater than 0.";
+      if (r <= 0) newErrors.rate = "Rate must be greater than 0.";
+    }
+    const valid = Object.keys(newErrors).length === 0;
+    return { valid, newErrors };
+  }, [description, date, projectId, employeeId, amount, quantity, rate, isProject, isLabor, isEmployeePaid]);
+
   const resetForm = () => {
     setCategory("general");
     setProjectId("");
@@ -77,10 +112,18 @@ export default function ExpenseCreateModal({
     setPaymentMethod("cash");
     setPaidAmount("");
     setFiles(null);
+    setErrors({});
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    const { valid, newErrors } = runValidation();
+    if (!valid) {
+      setErrors(newErrors);
+      return;
+    }
+    const status = submitActionRef.current;
     const attachments = files
       ? Array.from(files).map((f) => ({ name: f.name }))
       : undefined;
@@ -88,7 +131,6 @@ export default function ExpenseCreateModal({
     if (isLabor) {
       const q = parseFloat(quantity) || 0;
       const r = parseFloat(rate) || 0;
-      if (q <= 0 || r <= 0) return;
       const project = projectId ? projects.find((p) => p.id === projectId) ?? null : null;
       onCreate({
         category: "outsourced_labor",
@@ -102,7 +144,7 @@ export default function ExpenseCreateModal({
         attachments,
         paymentMethod,
         paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
-        status: "posted",
+        status,
       });
     } else if (isEmployeePaid) {
       const employee = employees.find((emp) => emp.id === employeeId) ?? null;
@@ -119,12 +161,11 @@ export default function ExpenseCreateModal({
         paymentMethod,
         paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
         attachments,
-        status: "posted",
+        status,
       });
     } else {
-      const amt = isProject ? parseFloat(amount) || 0 : parseFloat(amount) || 0;
+      const amt = parseFloat(amount) || 0;
       const project = isProject && projectId ? projects.find((p) => p.id === projectId) ?? null : null;
-      if (isProject && !project) return;
       onCreate({
         category,
         description: description.trim() || "—",
@@ -134,7 +175,7 @@ export default function ExpenseCreateModal({
         attachments,
         paymentMethod,
         paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
-        status: "posted",
+        status,
       });
     }
     resetForm();
@@ -147,8 +188,9 @@ export default function ExpenseCreateModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-      <form onSubmit={handleSubmit} className="p-6 sm:p-8">
+    <>
+    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <form ref={formRef} onSubmit={handleSubmit} className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
           Add Expense
         </h2>
@@ -172,7 +214,7 @@ export default function ExpenseCreateModal({
             <div>
               <Label>Project</Label>
               <select
-                className={selectClass}
+                className={errors.project ? selectClass + " border-error-500" : selectClass}
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 required={isProject}
@@ -184,6 +226,7 @@ export default function ExpenseCreateModal({
                   </option>
                 ))}
               </select>
+              {errors.project && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.project}</p>}
             </div>
           )}
 
@@ -224,12 +267,13 @@ export default function ExpenseCreateModal({
                     type="number"
                     min={0}
                     step={laborType === "hourly" ? "0.5" : "1"}
-                    className={inputClass}
+                    className={errors.quantity ? inputClass + " border-error-500" : inputClass}
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     placeholder="0"
                     required={isLabor}
                   />
+                  {errors.quantity && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.quantity}</p>}
                 </div>
                 <div>
                   <Label>Rate (QAR per {laborType === "hourly" ? "hour" : "day"})</Label>
@@ -237,12 +281,13 @@ export default function ExpenseCreateModal({
                     type="number"
                     min={0}
                     step="0.01"
-                    className={inputClass}
+                    className={errors.rate ? inputClass + " border-error-500" : inputClass}
                     value={rate}
                     onChange={(e) => setRate(e.target.value)}
                     placeholder="0"
                     required={isLabor}
                   />
+                  {errors.rate && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.rate}</p>}
                 </div>
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums">
@@ -256,7 +301,7 @@ export default function ExpenseCreateModal({
               <div>
                 <Label>Employee</Label>
                 <select
-                  className={selectClass}
+                  className={errors.employee ? selectClass + " border-error-500" : selectClass}
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
                   required={isEmployeePaid}
@@ -268,6 +313,7 @@ export default function ExpenseCreateModal({
                     </option>
                   ))}
                 </select>
+                {errors.employee && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.employee}</p>}
               </div>
               <div>
                 <Label>Project (optional)</Label>
@@ -291,12 +337,13 @@ export default function ExpenseCreateModal({
             <Label>Description</Label>
             <input
               type="text"
-              className={inputClass}
+              className={errors.description ? inputClass + " border-error-500" : inputClass}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Site equipment rental"
               required
             />
+            {errors.description && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.description}</p>}
           </div>
 
           {!isLabor && (
@@ -307,12 +354,13 @@ export default function ExpenseCreateModal({
                   type="number"
                   min={0}
                   step="0.01"
-                  className={inputClass}
+                  className={errors.amount ? inputClass + " border-error-500" : inputClass}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0"
                   required={!isLabor}
                 />
+                {errors.amount && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.amount}</p>}
               </div>
               <div>
                 <DatePicker
@@ -322,6 +370,7 @@ export default function ExpenseCreateModal({
                   value={date}
                   onChange={(_, dateStr) => setDate(dateStr ?? "")}
                 />
+                {errors.date && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.date}</p>}
               </div>
             </div>
           )}
@@ -335,6 +384,7 @@ export default function ExpenseCreateModal({
                 value={date}
                 onChange={(_, dateStr) => setDate(dateStr ?? "")}
               />
+              {errors.date && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.date}</p>}
             </div>
           )}
 
@@ -397,18 +447,52 @@ export default function ExpenseCreateModal({
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            disabled={isSubmitting}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-60"
           >
             Cancel
           </button>
           <button
-            type="submit"
-            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+            type="button"
+            onClick={() => {
+              submitActionRef.current = "draft";
+              formRef.current?.requestSubmit();
+            }}
+            disabled={isSubmitting}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-60"
           >
-            Post
+            {isSubmitting ? "Saving…" : "Draft"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setErrors({});
+              const { valid, newErrors } = runValidation();
+              if (!valid) {
+                setErrors(newErrors);
+                return;
+              }
+              setShowPostConfirm(true);
+            }}
+            disabled={isSubmitting}
+            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-60"
+          >
+            {isSubmitting ? "Saving…" : "Post"}
           </button>
         </div>
       </form>
     </Modal>
+    <ConfirmPostModal
+      isOpen={showPostConfirm}
+      onClose={() => setShowPostConfirm(false)}
+      onConfirm={() => {
+        setShowPostConfirm(false);
+        submitActionRef.current = "posted";
+        formRef.current?.requestSubmit();
+      }}
+      title="Post Expense"
+      message="Once posted, this expense cannot be edited. Posting will reflect in the accounts. Do you want to continue?"
+    />
+    </>
   );
 }

@@ -22,6 +22,9 @@ export type LaborType = "hourly" | "daily";
 
 export type ExpenseStatus = "draft" | "posted";
 
+/** Ledger status for a single payment: draft (no ledger) or posted. */
+export type PaymentLedgerStatus = "draft" | "posted";
+
 export interface Expense {
   id: string;
   category: ExpenseCategory;
@@ -44,5 +47,11 @@ export interface Expense {
   /** draft or posted; optional for backward compatibility */
   status?: ExpenseStatus;
   /** List of payment transactions against this expense. */
-  payments?: { id: string; date: string; amount: number }[];
+  payments?: {
+    id: string;
+    date: string;
+    amount: number;
+    reference?: string;
+    status?: PaymentLedgerStatus;
+  }[];
 }

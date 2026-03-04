@@ -21,6 +21,19 @@ from .serializers import (
 )
 
 
+def get_payment_for_purchase(request, purchase_pk, payment_pk):
+    """Return PurchasePayment if it belongs to the given purchase and user has access."""
+    qs = get_purchase_queryset(request)
+    purchase = get_object_or_404(qs, pk=purchase_pk)
+    if purchase.account_id not in user_account_ids(request):
+        from rest_framework.exceptions import PermissionDenied
+        raise PermissionDenied("You do not have access to this account.")
+    return get_object_or_404(
+        PurchasePayment.objects.filter(purchase=purchase, is_deleted=False),
+        pk=payment_pk,
+    )
+
+
 def user_account_ids(request):
     """Return set of account IDs (int) the current user is linked to."""
     if not request.user or not request.user.is_authenticated:
@@ -152,6 +165,27 @@ class PurchasePaymentListCreateAPIView(APIView):
             PurchasePaymentReadSerializer(payment).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class PurchasePaymentDetailAPIView(APIView):
+    """PATCH a single payment (e.g. set status to posted). Requires x-account-id header."""
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, payment_pk):
+        if _current_account_id(request) is None:
+            return Response(
+                {"detail": "x-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        payment = get_payment_for_purchase(request, pk, payment_pk)
+        serializer = PurchasePaymentWriteSerializer(
+            payment, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        _recompute_payment_status(payment.purchase)
+        return Response(PurchasePaymentReadSerializer(payment).data)
 
 
 class PurchaseDocumentListCreateAPIView(APIView):

@@ -15,7 +15,7 @@ export default function ConfirmMarkPaidModal({
   onConfirm,
 }: ConfirmMarkPaidModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md mx-4">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4">
       <div className="p-6 sm:p-8">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Mark as Paid

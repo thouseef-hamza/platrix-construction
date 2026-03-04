@@ -23,6 +23,7 @@ from .constants import (
     COA_CODE_OTHER_EXPENSE,
     COA_CODE_PROJECT_EXPENSE,
     EXPENSE_STATUS_POSTED,
+    PAYMENT_LEDGER_POSTED,
 )
 from .models import Expense, ExpensePayment
 
@@ -110,10 +111,10 @@ def on_expense_posted_create_ledger_entry(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=ExpensePayment)
 def on_expense_payment_created_create_ledger_entry(sender, instance, created, **kwargs):
-    """When a payment is added to a posted expense, create LedgerEntry: Debit AP (2010), Credit Cash (1010)."""
-    if not created:
-        return
+    """When a payment is posted (status=posted) on a posted expense, create LedgerEntry: Debit AP (2010), Credit Cash (1010)."""
     if instance.is_deleted:
+        return
+    if instance.status != PAYMENT_LEDGER_POSTED:
         return
     expense = instance.expense
     if expense.status != EXPENSE_STATUS_POSTED:

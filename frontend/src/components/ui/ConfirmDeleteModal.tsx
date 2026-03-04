@@ -3,26 +3,32 @@
 import React from "react";
 import { Modal } from "@/components/ui/modal";
 
-interface ConfirmPostModalProps {
+interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  /** Optional title. Default: "Post Purchase" */
   title?: string;
-  /** Optional message. Default: standard post warning. */
   message?: string;
+  itemName?: string;
+  /** Button label. Default: "Delete" */
+  confirmLabel?: string;
 }
 
-const defaultMessage =
-  "This action cannot be undone. The entry will be recorded in the accounts.";
-
-export default function ConfirmPostModal({
+export default function ConfirmDeleteModal({
   isOpen,
   onClose,
   onConfirm,
-  title = "Post Purchase",
-  message = defaultMessage,
-}: ConfirmPostModalProps) {
+  title = "Delete",
+  message,
+  itemName,
+  confirmLabel = "Delete",
+}: ConfirmDeleteModalProps) {
+  const displayMessage =
+    message ??
+    (itemName
+      ? `Are you sure you want to delete "${itemName}"? This action cannot be undone.`
+      : "Are you sure you want to delete this? This action cannot be undone.");
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4">
       <div className="p-6 sm:p-8">
@@ -30,7 +36,7 @@ export default function ConfirmPostModal({
           {title}
         </h2>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          {message}
+          {displayMessage}
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -46,9 +52,9 @@ export default function ConfirmPostModal({
               onConfirm();
               onClose();
             }}
-            className="rounded-lg bg-warning-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-warning-600"
+            className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
           >
-            Post
+            {confirmLabel}
           </button>
         </div>
       </div>

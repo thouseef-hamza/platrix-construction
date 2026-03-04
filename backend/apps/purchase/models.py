@@ -5,6 +5,8 @@ from django.db import models
 from apps.core.models import BaseModel
 
 from .constants import (
+    PAYMENT_LEDGER_DRAFT,
+    PAYMENT_LEDGER_STATUS_CHOICES,
     PAYMENT_METHOD_CASH,
     PAYMENT_METHOD_CHOICES,
     PAYMENT_STATUS_CHOICES,
@@ -138,7 +140,7 @@ class PurchaseLineItem(BaseModel):
 
 
 class PurchasePayment(BaseModel):
-    """Payment made against a purchase."""
+    """Payment made against a purchase. Ledger status: draft (no ledger) or posted (AP dr, Cash cr)."""
 
     purchase = models.ForeignKey(
         Purchase,
@@ -153,6 +155,11 @@ class PurchasePayment(BaseModel):
         default=Decimal("0.00"),
     )
     reference = models.CharField(max_length=128, blank=True)
+    status = models.IntegerField(
+        choices=PAYMENT_LEDGER_STATUS_CHOICES,
+        db_index=True,
+        default=PAYMENT_LEDGER_DRAFT,
+    )
 
     class Meta:
         db_table = "purchase_payment"

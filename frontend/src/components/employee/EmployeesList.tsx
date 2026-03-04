@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -13,15 +14,46 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/utils/format";
 import type { Employee } from "@/types/employee";
-import { MOCK_EMPLOYEES } from "@/data/mockEmployees";
-import { MOCK_EXPENSES } from "@/data/mockExpenses";
+import { EMPLOYMENT_STATUS_LABELS } from "@/types/employee";
+import { useCompany } from "@/context/CompanyContext";
+import {
+  fetchEmployees,
+  getEmployee,
+  createEmployee,
+  updateEmployee,
+  addEmployeeSalary,
+  addEmployeeTransaction,
+} from "@/lib/employeesApi";
+import type { AddSalaryPayload, AddTransactionPayload } from "@/lib/employeesApi";
 import EmployeeViewModal from "./EmployeeViewModal";
 import EmployeeCreateModal from "./EmployeeCreateModal";
 
+const EMPLOYEES_QUERY_KEY = "employees";
+
 const PAGE_SIZE = 8;
 
+function totalSalary(emp: Employee): number {
+  return (
+    (emp.basicSalary ?? 0) +
+    (emp.housingAllowance ?? 0) +
+    (emp.transportationAllowance ?? 0) +
+    (emp.otherAllowances ?? 0)
+  );
+}
+
+function statusLabel(emp: Employee): string {
+  if (emp.employmentStatus == null) return "—";
+  return EMPLOYMENT_STATUS_LABELS[emp.employmentStatus];
+}
+
 export default function EmployeesList() {
-  const [items, setItems] = useState<Employee[]>(() => [...MOCK_EMPLOYEES]);
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
+  const { data: employees = [], isLoading } = useQuery({
+    queryKey: [EMPLOYEES_QUERY_KEY, companyId],
+    queryFn: () => fetchEmployees(),
+    enabled: !!companyId,
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,8 +61,58 @@ export default function EmployeesList() {
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
+  const { data: selectedDetail } = useQuery({
+    queryKey: ["employee", selected?.id],
+    queryFn: () => getEmployee(Number(selected!.id)),
+    enabled: !!selected?.id && viewOpen,
+  });
+  const employeeForModal = selectedDetail ?? selected;
+
+  const createMutation = useMutation({
+    mutationFn: createEmployee,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EMPLOYEES_QUERY_KEY] });
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<Employee> }) =>
+      updateEmployee(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: [EMPLOYEES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["employee", String(id)] });
+    },
+  });
+  const addSalaryMutation = useMutation({
+    mutationFn: ({
+      employeeId,
+      payload,
+    }: {
+      employeeId: number;
+      payload: AddSalaryPayload;
+    }) => addEmployeeSalary(employeeId, payload),
+    onSuccess: (_, { employeeId }) => {
+      queryClient.invalidateQueries({ queryKey: [EMPLOYEES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["employee", String(employeeId)] });
+    },
+  });
+  const addTransactionMutation = useMutation({
+    mutationFn: ({
+      employeeId,
+      payload,
+    }: {
+      employeeId: number;
+      payload: AddTransactionPayload;
+    }) => addEmployeeTransaction(employeeId, payload),
+    onSuccess: (_, { employeeId }) => {
+      queryClient.invalidateQueries({ queryKey: [EMPLOYEES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["employee", String(employeeId)] });
+    },
+  });
+
+  const items = employees;
   const departments = useMemo(
-    () => [...new Set(items.map((e) => e.department))].sort(),
+    () =>
+      [...new Set(items.map((e) => e.department).filter(Boolean))].sort() as string[],
     [items]
   );
 
@@ -43,10 +125,10 @@ export default function EmployeesList() {
     if (q) {
       list = list.filter(
         (e) =>
-          e.name.toLowerCase().includes(q) ||
-          e.email.toLowerCase().includes(q) ||
-          e.department.toLowerCase().includes(q) ||
-          e.position.toLowerCase().includes(q)
+          e.fullName.toLowerCase().includes(q) ||
+          (e.department?.toLowerCase().includes(q) ?? false) ||
+          (e.jobTitle?.toLowerCase().includes(q) ?? false) ||
+          (e.employeeId?.toLowerCase().includes(q) ?? false)
       );
     }
     const total = list.length;
@@ -64,16 +146,10 @@ export default function EmployeesList() {
   }, [totalPages, currentPage]);
 
   const handleUpdate = (id: string, updates: Partial<Employee>) => {
-    setItems((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
-    );
-    if (selected?.id === id)
-      setSelected((s) => (s ? { ...s, ...updates } : null));
+    updateMutation.mutate({ id: Number(id), payload: updates });
   };
 
-  const pendingReimbursement = useMemo(() => {
-    return 0;
-  }, []);
+  if (!companyId) return null;
 
   return (
     <div>
@@ -99,7 +175,7 @@ export default function EmployeesList() {
               </label>
               <input
                 type="text"
-                placeholder="Name, email, department..."
+                placeholder="Name, department, job title..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -153,7 +229,7 @@ export default function EmployeesList() {
                       isHeader
                       className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
                     >
-                      Position
+                      Job title
                     </TableCell>
                     <TableCell
                       isHeader
@@ -182,7 +258,16 @@ export default function EmployeesList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {pageItems.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <td
+                        colSpan={7}
+                        className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                      >
+                        Loading…
+                      </td>
+                    </TableRow>
+                  ) : pageItems.length === 0 ? (
                     <TableRow>
                       <td
                         colSpan={7}
@@ -192,48 +277,54 @@ export default function EmployeesList() {
                       </td>
                     </TableRow>
                   ) : (
-                    pageItems.map((employee) => (
+                    pageItems.map((emp) => (
                       <tr
-                        key={employee.id}
+                        key={emp.id}
                         role="button"
                         tabIndex={0}
                         onClick={() => {
-                          setSelected(employee);
+                          setSelected(emp);
                           setViewOpen(true);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            setSelected(employee);
+                            setSelected(emp);
                             setViewOpen(true);
                           }
                         }}
                         className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.03]"
                       >
                         <TableCell className="px-5 py-4 text-start text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                          {employee.name}
+                          {emp.fullName}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {employee.department}
+                          {emp.department ?? "—"}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {employee.position}
+                          {emp.jobTitle ?? "—"}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {formatDate(employee.joinDate)}
+                          {emp.joiningDate
+                            ? formatDate(emp.joiningDate)
+                            : "—"}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-400 tabular-nums">
-                          {formatCurrency(employee.salary)}
+                          {totalSalary(emp) > 0
+                            ? formatCurrency(totalSalary(emp))
+                            : "—"}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-center">
                           <span
                             className={
-                              employee.status === "active"
+                              emp.employmentStatus === 0
                                 ? "inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                : "inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                : emp.employmentStatus === 1
+                                  ? "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                  : "inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                             }
                           >
-                            {employee.status}
+                            {statusLabel(emp)}
                           </span>
                         </TableCell>
                         <TableCell className="px-5 py-4 text-center">
@@ -241,12 +332,12 @@ export default function EmployeesList() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelected(employee);
+                              setSelected(emp);
                               setViewOpen(true);
                             }}
                             className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-brand-400"
-                            title="Edit"
-                            aria-label="Edit employee"
+                            title="View / Edit"
+                            aria-label="View employee"
                           >
                             <svg
                               className="h-5 w-5"
@@ -285,39 +376,44 @@ export default function EmployeesList() {
         </ComponentCard>
       </div>
       <EmployeeViewModal
-        employee={selected}
+        employee={employeeForModal}
         isOpen={viewOpen}
         onClose={() => {
           setViewOpen(false);
           setSelected(null);
         }}
         onUpdate={handleUpdate}
-        pendingReimbursement={pendingReimbursement}
+        onAddSalary={(payload) => {
+          if (employeeForModal?.id)
+            addSalaryMutation.mutate({
+              employeeId: Number(employeeForModal.id),
+              payload,
+            });
+        }}
+        onAddTransaction={(payload) => {
+          if (employeeForModal?.id)
+            addTransactionMutation.mutate({
+              employeeId: Number(employeeForModal.id),
+              payload,
+            });
+        }}
+        isAddingSalary={addSalaryMutation.isPending}
+        isAddingTransaction={addTransactionMutation.isPending}
       />
       <EmployeeCreateModal
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreate={(data) => {
-          const salaryNum = data.salary ?? 0;
-          const initialEntry =
-            salaryNum > 0 && data.joinDate
-              ? [
-                  {
-                    id: `se-${Date.now()}`,
-                    effectiveDate: data.joinDate,
-                    amount: salaryNum,
-                    type: "regular" as const,
-                  },
-                ]
-              : [];
-          setItems((prev) => [
+          createMutation.mutate(
             {
-              ...data,
-              id: `emp-${Date.now()}`,
-              salaryEntries: initialEntry,
+              full_name: data.fullName,
+              nationality: data.nationality,
+              gender: data.gender,
+              date_of_birth: data.dateOfBirth || null,
+              marital_status: data.maritalStatus || null,
             },
-            ...prev,
-          ]);
+            { onSuccess: () => setCreateOpen(false) }
+          );
         }}
       />
     </div>

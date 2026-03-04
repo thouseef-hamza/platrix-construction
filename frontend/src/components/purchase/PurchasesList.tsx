@@ -24,6 +24,7 @@ import {
   createPurchase,
   updatePurchase,
   addPurchasePayment,
+  patchPurchasePayment,
 } from "@/lib/purchasesApi";
 import PurchaseViewModal from "./PurchaseViewModal";
 import PurchaseCreateModal from "./PurchaseCreateModal";
@@ -79,6 +80,21 @@ export default function PurchasesList() {
       purchaseId: number;
       payload: Parameters<typeof addPurchasePayment>[1];
     }) => addPurchasePayment(purchaseId, payload),
+    onSuccess: (_, { purchaseId }) => {
+      queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["purchase", String(purchaseId)] });
+    },
+  });
+  const patchPaymentMutation = useMutation({
+    mutationFn: ({
+      purchaseId,
+      paymentId,
+      payload,
+    }: {
+      purchaseId: number;
+      paymentId: number;
+      payload: { status: "draft" | "posted" };
+    }) => patchPurchasePayment(purchaseId, paymentId, payload),
     onSuccess: (_, { purchaseId }) => {
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["purchase", String(purchaseId)] });
@@ -152,6 +168,7 @@ export default function PurchasesList() {
             date: newPayment.date,
             amount: newPayment.amount,
             reference: newPayment.reference,
+            status: newPayment.status ?? "draft",
           },
         });
       return;
@@ -368,6 +385,13 @@ export default function PurchasesList() {
           setSelected(null);
         }}
         onUpdate={handleUpdate}
+        onPostPayment={(purchaseId, paymentId) =>
+          patchPaymentMutation.mutate({
+            purchaseId: Number(purchaseId),
+            paymentId: Number(paymentId),
+            payload: { status: "posted" },
+          })
+        }
       />
       <PurchaseCreateModal
         isOpen={createOpen}

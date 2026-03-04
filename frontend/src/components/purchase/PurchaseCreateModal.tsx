@@ -203,7 +203,7 @@ export default function PurchaseCreateModal({
 
   return (
     <>
-    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
           Add Purchase

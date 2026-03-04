@@ -5,32 +5,55 @@ import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import DatePicker from "@/components/form/date-picker";
 import { formatCurrency, formatDate } from "@/utils/format";
-import type { Employee, SalaryEntry, SalaryEntryType } from "@/types/employee";
+import type { Employee, EmployeeSalaryEntry, EmployeeTransaction } from "@/types/employee";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  SPONSORSHIP_LABELS,
+  EMPLOYMENT_TYPE_LABELS,
+  EMPLOYMENT_STATUS_LABELS,
+} from "@/types/employee";
+import type { AddSalaryPayload, AddTransactionPayload } from "@/lib/employeesApi";
+
+type Tab =
+  | "details"
+  | "identification"
+  | "employment"
+  | "salary_wps"
+  | "medical_insurance"
+  | "salary_management"
+  | "financial"
+  | "documents";
+
+const tabs: { id: Tab; label: string }[] = [
+  { id: "details", label: "Details" },
+  { id: "identification", label: "Identification" },
+  { id: "employment", label: "Employment" },
+  { id: "salary_wps", label: "Salary & WPS Details" },
+  { id: "medical_insurance", label: "Medical & Insurance" },
+  { id: "salary_management", label: "Salary Management" },
+  { id: "financial", label: "Financial" },
+  { id: "documents", label: "Documents" },
+];
 
 const inputClass =
-  "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800";
+  "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
 
-const TYPE_LABELS: Record<SalaryEntryType, string> = {
-  regular: "Regular",
-  bonus: "Bonus",
-  adjustment: "Adjustment",
-};
-
-type Tab = "details" | "dashboard" | "salary";
-
-function monthsBetween(startDate: string, endDate: string): number {
-  const s = new Date(startDate);
-  const e = new Date(endDate);
-  return Math.max(
-    0,
-    (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth())
+function Field({
+  label,
+  value,
+  className = "",
+}: {
+  label: string;
+  value: React.ReactNode;
+  className?: string;
+}) {
+  if (value == null || value === "") return null;
+  return (
+    <div className={className}>
+      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+        {label}
+      </dt>
+      <dd className="mt-1 text-sm text-gray-900 dark:text-white">{value}</dd>
+    </div>
   );
 }
 
@@ -39,8 +62,10 @@ interface EmployeeViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Employee>) => void;
-  /** Pending reimbursement amount (employee-paid expenses not yet reimbursed) */
-  pendingReimbursement?: number;
+  onAddSalary?: (payload: AddSalaryPayload) => void;
+  onAddTransaction?: (payload: AddTransactionPayload) => void;
+  isAddingSalary?: boolean;
+  isAddingTransaction?: boolean;
 }
 
 export default function EmployeeViewModal({
@@ -48,354 +73,305 @@ export default function EmployeeViewModal({
   isOpen,
   onClose,
   onUpdate,
-  pendingReimbursement = 0,
+  onAddSalary,
+  onAddTransaction,
+  isAddingSalary = false,
+  isAddingTransaction = false,
 }: EmployeeViewModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
-  const [showAddSalary, setShowAddSalary] = useState(false);
-  const [newEffectiveDate, setNewEffectiveDate] = useState("");
-  const [newAmount, setNewAmount] = useState("");
-  const [newType, setNewType] = useState<SalaryEntryType>("regular");
-  const [newNotes, setNewNotes] = useState("");
+  const [salaryDate, setSalaryDate] = useState("");
+  const [salaryAmount, setSalaryAmount] = useState("");
+  const [salaryDescription, setSalaryDescription] = useState("");
+  const [txDate, setTxDate] = useState("");
+  const [txAmount, setTxAmount] = useState("");
+  const [txDescription, setTxDescription] = useState("");
+  const [txType, setTxType] = useState("");
+  const [txReference, setTxReference] = useState("");
 
   if (!employee) return null;
 
-  const entries = employee.salaryEntries ?? [];
-  const sortedEntries = [...entries].sort(
-    (a, b) => b.effectiveDate.localeCompare(a.effectiveDate)
+  const salaryEntries: EmployeeSalaryEntry[] = employee.salaryEntries ?? [];
+  const transactions: EmployeeTransaction[] = employee.transactions ?? [];
+  const sortedSalaries = [...salaryEntries].sort(
+    (a, b) => b.date.localeCompare(a.date)
+  );
+  const sortedTransactions = [...transactions].sort(
+    (a, b) => b.date.localeCompare(a.date)
   );
 
-  const today = new Date().toISOString().slice(0, 10);
-  const monthsEmployed = monthsBetween(employee.joinDate, today);
-  const bonusAndAdjustmentTotal = entries
-    .filter((e) => e.type === "bonus" || e.type === "adjustment")
-    .reduce((sum, e) => sum + e.amount, 0);
-  const totalEarned =
-    monthsEmployed * employee.salary + bonusAndAdjustmentTotal;
-
-  const resetAddSalary = () => {
-    setShowAddSalary(false);
-    setNewEffectiveDate("");
-    setNewAmount("");
-    setNewType("regular");
-    setNewNotes("");
-  };
-
-  const handleAddSalary = () => {
-    const amount = parseFloat(newAmount);
-    if (isNaN(amount) || amount < 0 || !newEffectiveDate) return;
-    const newEntry: SalaryEntry = {
-      id: `se-${Date.now()}`,
-      effectiveDate: newEffectiveDate,
-      amount,
-      type: newType,
-      notes: newNotes.trim() || undefined,
-    };
-    const updatedEntries = [newEntry, ...entries];
-    const updates: Partial<Employee> = {
-      salaryEntries: updatedEntries,
-    };
-    if (newType === "regular") {
-      updates.salary = amount;
-    }
-    onUpdate?.(employee.id, updates);
-    resetAddSalary();
-  };
+  const totalSalary =
+    (employee.basicSalary ?? 0) +
+    (employee.housingAllowance ?? 0) +
+    (employee.transportationAllowance ?? 0) +
+    (employee.otherAllowances ?? 0);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+      className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto"
     >
       <div className="p-6 sm:p-8">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Employee Details
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          {employee.fullName}
         </h2>
+        {employee.employeeId && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            ID: {employee.employeeId}
+          </p>
+        )}
+        {!employee.employeeId && <div className="mb-6" />}
 
-        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
-          <button
-            type="button"
-            onClick={() => setActiveTab("details")}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-              activeTab === "details"
-                ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white border-b-2 border-brand-500 -mb-px"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            }`}
-          >
-            Details
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("dashboard")}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-              activeTab === "dashboard"
-                ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white border-b-2 border-brand-500 -mb-px"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            }`}
-          >
-            Dashboard
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("salary")}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-              activeTab === "salary"
-                ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white border-b-2 border-brand-500 -mb-px"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            }`}
-          >
-            Salary Management
-          </button>
+        <div className="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === tab.id
+                  ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white border-b-2 border-brand-500 -mb-px"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {activeTab === "details" && (
-          <section>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-              Personal Information
+          <section className="space-y-6">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Basic Identity
             </h3>
-            <dl className="space-y-4">
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Name
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {employee.name}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Email
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {employee.email}
-                </dd>
-              </div>
-              {employee.phone && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Phone
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {employee.phone}
-                  </dd>
-                </div>
-              )}
-              {employee.dateOfBirth && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Date of birth
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {formatDate(employee.dateOfBirth)}
-                  </dd>
-                </div>
-              )}
-              {employee.address && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Address
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {employee.address}
-                  </dd>
-                </div>
-              )}
-              {employee.nationality && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Nationality
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {employee.nationality}
-                  </dd>
-                </div>
-              )}
-              {employee.qatarDocuments && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Qatar documents
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {employee.qatarDocuments}
-                  </dd>
-                </div>
-              )}
-              {employee.passportExpiry && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Passport expiry
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {formatDate(employee.passportExpiry)}
-                  </dd>
-                </div>
-              )}
-              {employee.visaExpiry && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Visa expiry
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {formatDate(employee.visaExpiry)}
-                  </dd>
-                </div>
-              )}
-              {employee.qidExpiry && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    QID expiry
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {formatDate(employee.qidExpiry)}
-                  </dd>
-                </div>
-              )}
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Department
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {employee.department}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Position
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {employee.position}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Join date
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {formatDate(employee.joinDate)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Current salary
-                </dt>
-                <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white tabular-nums">
-                  {formatCurrency(employee.salary)} {employee.currency ?? "QAR"}
-                </dd>
-              </div>
-              {employee.bankAccount && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Bank account
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 dark:text-white font-mono">
-                    {employee.bankAccount}
-                  </dd>
-                </div>
-              )}
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Status
-                </dt>
-                <dd className="mt-1">
-                  <span
-                    className={
-                      employee.status === "active"
-                        ? "inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                        : "inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                    }
-                  >
-                    {employee.status}
-                  </span>
-                </dd>
-              </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Full name" value={employee.fullName} />
+              <Field label="Nationality" value={employee.nationality} />
+              <Field
+                label="Gender"
+                value={employee.gender ? String(employee.gender) : undefined}
+              />
+              <Field
+                label="Date of birth"
+                value={
+                  employee.dateOfBirth
+                    ? formatDate(employee.dateOfBirth)
+                    : undefined
+                }
+              />
+              <Field
+                label="Marital status"
+                value={employee.maritalStatus ?? undefined}
+              />
             </dl>
           </section>
         )}
 
-        {activeTab === "dashboard" && (
-          <section>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-              Compensation overview
+        {activeTab === "identification" && (
+          <section className="space-y-6">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Identification
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.04] p-5">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                  Basic salary
-                </p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-white tabular-nums">
-                  {formatCurrency(employee.salary)}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {employee.currency ?? "QAR"} per month
-                </p>
-              </div>
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.04] p-5">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                  Total amount given
-                </p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-white tabular-nums">
-                  {formatCurrency(totalEarned)}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Estimated total paid by company
-                </p>
-              </div>
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.04] p-5">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                  Total money earned
-                </p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-white tabular-nums">
-                  {formatCurrency(totalEarned)}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Through this company ({monthsEmployed} months)
-                </p>
-              </div>
-              <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-500/10 p-5">
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1">
-                  Amount to reimburse
-                </p>
-                <p className="text-xl font-semibold text-amber-800 dark:text-amber-300 tabular-nums">
-                  {formatCurrency(pendingReimbursement)}
-                </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400/80 mt-1">
-                  Pending employee-paid expenses
-                </p>
-              </div>
-            </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="QID number" value={employee.qidNumber} />
+              <Field
+                label="QID expiry date"
+                value={
+                  employee.qidExpiryDate
+                    ? formatDate(employee.qidExpiryDate)
+                    : undefined
+                }
+              />
+              <Field label="Passport number" value={employee.passportNumber} />
+              <Field
+                label="Passport expiry date"
+                value={
+                  employee.passportExpiryDate
+                    ? formatDate(employee.passportExpiryDate)
+                    : undefined
+                }
+              />
+              <Field label="Visa number" value={employee.visaNumber} />
+              <Field
+                label="Visa expiry date"
+                value={
+                  employee.visaExpiryDate
+                    ? formatDate(employee.visaExpiryDate)
+                    : undefined
+                }
+              />
+              <Field
+                label="Sponsorship type"
+                value={
+                  employee.sponsorshipType != null
+                    ? SPONSORSHIP_LABELS[employee.sponsorshipType]
+                    : undefined
+                }
+              />
+            </dl>
           </section>
         )}
 
-        {activeTab === "salary" && (
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Salary history
-              </h3>
-              {onUpdate && (
-                <button
-                  type="button"
-                  onClick={() => setShowAddSalary(!showAddSalary)}
-                  className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
-                >
-                  {showAddSalary ? "Cancel" : "+ Add salary entry"}
-                </button>
-              )}
+        {activeTab === "employment" && (
+          <section className="space-y-6">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Employment details
+            </h3>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Employee ID (internal)" value={employee.employeeId} />
+              <Field
+                label="Joining date"
+                value={
+                  employee.joiningDate
+                    ? formatDate(employee.joiningDate)
+                    : undefined
+                }
+              />
+              <Field
+                label="Employment type"
+                value={
+                  employee.employmentType != null
+                    ? EMPLOYMENT_TYPE_LABELS[employee.employmentType]
+                    : undefined
+                }
+              />
+              <Field label="Job title" value={employee.jobTitle} />
+              <Field label="Department" value={employee.department} />
+              <Field
+                label="Employment status"
+                value={
+                  employee.employmentStatus != null ? (
+                    <span
+                      className={
+                        employee.employmentStatus === 0
+                          ? "inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          : employee.employmentStatus === 1
+                            ? "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                            : "inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                      }
+                    >
+                      {EMPLOYMENT_STATUS_LABELS[employee.employmentStatus]}
+                    </span>
+                  ) : undefined
+                }
+              />
+            </dl>
+          </section>
+        )}
+
+        {activeTab === "salary_wps" && (
+          <section className="space-y-6">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Salary structure
+            </h3>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                label="Basic salary"
+                value={
+                  employee.basicSalary != null
+                    ? formatCurrency(employee.basicSalary)
+                    : undefined
+                }
+              />
+              <Field
+                label="Housing allowance"
+                value={
+                  employee.housingAllowance != null
+                    ? formatCurrency(employee.housingAllowance)
+                    : undefined
+                }
+              />
+              <Field
+                label="Transportation allowance"
+                value={
+                  employee.transportationAllowance != null
+                    ? formatCurrency(employee.transportationAllowance)
+                    : undefined
+                }
+              />
+              <Field
+                label="Other allowances"
+                value={
+                  employee.otherAllowances != null
+                    ? formatCurrency(employee.otherAllowances)
+                    : undefined
+                }
+              />
+            </dl>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] p-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Total (QAR)
+              </p>
+              <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white tabular-nums">
+                {formatCurrency(totalSalary)}
+              </p>
             </div>
 
-            {showAddSalary && (
-              <div className="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.03] space-y-4">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  New salary entry
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pt-4 border-t border-gray-200 dark:border-gray-700">
+              Bank & WPS
+            </h3>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Bank name" value={employee.bankName} />
+              <Field label="IBAN" value={employee.iban} />
+            </dl>
+          </section>
+        )}
+
+        {activeTab === "medical_insurance" && (
+          <section className="space-y-6">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Medical & insurance
+            </h3>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                label="Health card number"
+                value={employee.healthCardNumber}
+              />
+              <Field
+                label="Health insurance policy"
+                value={employee.healthInsurancePolicy}
+              />
+              <Field
+                label="Insurance expiry"
+                value={
+                  employee.insuranceExpiry
+                    ? formatDate(employee.insuranceExpiry)
+                    : undefined
+                }
+              />
+              <Field
+                label="Emergency contact name"
+                value={employee.emergencyContactName}
+              />
+              <Field
+                label="Emergency contact phone"
+                value={employee.emergencyContactPhone}
+              />
+            </dl>
+          </section>
+        )}
+
+        {activeTab === "salary_management" && (
+          <section className="space-y-6">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Salary entries
+            </h3>
+            {onAddSalary && (
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] p-4 space-y-4">
+                <h4 className="text-sm font-medium text-gray-800 dark:text-white">
+                  Add salary entry
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Use description to identify type (e.g. Advance, Remaining amount, Bonus, Adjustment).
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
+                    <Label>Date</Label>
                     <DatePicker
-                      id="employee-effective-date"
-                      label="Effective date"
+                      id="salary-entry-date"
                       placeholder="Select date"
-                      value={newEffectiveDate}
-                      onChange={(_, dateStr) => setNewEffectiveDate(dateStr ?? "")}
+                      value={salaryDate}
+                      onChange={(_, dateStr) => setSalaryDate(dateStr ?? "")}
                     />
                   </div>
                   <div>
@@ -405,124 +381,236 @@ export default function EmployeeViewModal({
                       min={0}
                       step="0.01"
                       className={inputClass}
-                      value={newAmount}
-                      onChange={(e) => setNewAmount(e.target.value)}
+                      value={salaryAmount}
+                      onChange={(e) => setSalaryAmount(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label>Description</Label>
+                    <input
+                      type="text"
+                      className={inputClass}
+                      value={salaryDescription}
+                      onChange={(e) => setSalaryDescription(e.target.value)}
+                      placeholder="e.g. Advance, Bonus"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={
+                    isAddingSalary ||
+                    !salaryDate ||
+                    !salaryAmount ||
+                    parseFloat(salaryAmount) < 0
+                  }
+                  onClick={() => {
+                    onAddSalary({
+                      date: salaryDate,
+                      amount: parseFloat(salaryAmount) || 0,
+                      description: salaryDescription.trim() || undefined,
+                    });
+                    setSalaryDate("");
+                    setSalaryAmount("");
+                    setSalaryDescription("");
+                  }}
+                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {isAddingSalary ? "Adding…" : "Add entry"}
+                </button>
+              </div>
+            )}
+            {sortedSalaries.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-center">
+                No salary entries yet.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {sortedSalaries.map((se) => (
+                  <li
+                    key={se.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-white/[0.03] px-3 py-2 text-sm"
+                  >
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {formatDate(se.date)}
+                    </span>
+                    <span className="font-medium tabular-nums text-gray-900 dark:text-white">
+                      {formatCurrency(se.amount)}
+                    </span>
+                    <span className="text-gray-500 dark:text-gray-400 w-full sm:w-auto">
+                      {se.description || "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {activeTab === "financial" && (
+          <section className="space-y-6">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Transactions (company – employee)
+            </h3>
+            {onAddTransaction && (
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] p-4 space-y-4">
+                <h4 className="text-sm font-medium text-gray-800 dark:text-white">
+                  Add transaction
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <Label>Date</Label>
+                    <DatePicker
+                      id="tx-date"
+                      placeholder="Select date"
+                      value={txDate}
+                      onChange={(_, dateStr) => setTxDate(dateStr ?? "")}
+                    />
+                  </div>
+                  <div>
+                    <Label>Amount (QAR)</Label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className={inputClass}
+                      value={txAmount}
+                      onChange={(e) => setTxAmount(e.target.value)}
                       placeholder="0"
                     />
                   </div>
                   <div>
                     <Label>Type</Label>
-                    <select
-                      className={inputClass}
-                      value={newType}
-                      onChange={(e) =>
-                        setNewType(e.target.value as SalaryEntryType)
-                      }
-                    >
-                      <option value="regular">Regular</option>
-                      <option value="bonus">Bonus</option>
-                      <option value="adjustment">Adjustment</option>
-                    </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>Notes (optional)</Label>
                     <input
                       type="text"
                       className={inputClass}
-                      value={newNotes}
-                      onChange={(e) => setNewNotes(e.target.value)}
-                      placeholder="e.g. Annual review, promotion"
+                      value={txType}
+                      onChange={(e) => setTxType(e.target.value)}
+                      placeholder="e.g. salary_payment, advance"
+                    />
+                  </div>
+                  <div>
+                    <Label>Reference</Label>
+                    <input
+                      type="text"
+                      className={inputClass}
+                      value={txReference}
+                      onChange={(e) => setTxReference(e.target.value)}
+                      placeholder="Optional"
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleAddSalary}
-                    disabled={
-                      !newEffectiveDate ||
-                      !newAmount ||
-                      parseFloat(newAmount) < 0
-                    }
-                    className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    Add entry
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetAddSalary}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                  >
-                    Cancel
-                  </button>
+                <div>
+                  <Label>Description</Label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={txDescription}
+                    onChange={(e) => setTxDescription(e.target.value)}
+                    placeholder="Optional"
+                  />
                 </div>
+                <button
+                  type="button"
+                  disabled={
+                    isAddingTransaction ||
+                    !txDate ||
+                    !txAmount ||
+                    parseFloat(txAmount) === 0
+                  }
+                  onClick={() => {
+                    onAddTransaction({
+                      date: txDate,
+                      amount: parseFloat(txAmount) || 0,
+                      description: txDescription.trim() || undefined,
+                      transaction_type: txType.trim() || undefined,
+                      reference: txReference.trim() || undefined,
+                    });
+                    setTxDate("");
+                    setTxAmount("");
+                    setTxDescription("");
+                    setTxType("");
+                    setTxReference("");
+                  }}
+                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {isAddingTransaction ? "Adding…" : "Add transaction"}
+                </button>
               </div>
             )}
+            {sortedTransactions.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-center">
+                No transactions yet.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {sortedTransactions.map((tx) => (
+                  <li
+                    key={tx.id}
+                    className="flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-white/[0.03] px-3 py-2 text-sm"
+                  >
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {formatDate(tx.date)}
+                    </span>
+                    <span
+                      className={`tabular-nums font-medium ${
+                        tx.amount >= 0
+                          ? "text-success-600 dark:text-success-400"
+                          : "text-error-600 dark:text-error-400"
+                      }`}
+                    >
+                      {tx.amount >= 0 ? "" : "-"}
+                      {formatCurrency(Math.abs(tx.amount))}
+                    </span>
+                    {tx.transactionType && (
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {tx.transactionType}
+                      </span>
+                    )}
+                    <span className="text-gray-600 dark:text-gray-300 flex-1 min-w-0 truncate">
+                      {tx.description || tx.reference || "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <Table>
-                <TableHeader className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.04]">
-                  <TableRow>
-                    <TableCell
-                      isHeader
-                      className="px-4 py-3 text-start text-xs font-medium text-gray-500 dark:text-gray-400"
+        {activeTab === "documents" && (
+          <section className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Documents
+            </h3>
+            {employee.documents && employee.documents.length > 0 ? (
+              <ul className="space-y-2">
+                {employee.documents.map((doc) => (
+                  <li
+                    key={doc.id}
+                    className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] px-3 py-2 text-sm text-gray-700 dark:text-gray-300"
+                  >
+                    <svg
+                      className="h-5 w-5 text-gray-400 shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
                     >
-                      Effective date
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-4 py-3 text-end text-xs font-medium text-gray-500 dark:text-gray-400"
-                    >
-                      Amount (QAR)
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-4 py-3 text-start text-xs font-medium text-gray-500 dark:text-gray-400"
-                    >
-                      Type
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-4 py-3 text-start text-xs font-medium text-gray-500 dark:text-gray-400"
-                    >
-                      Notes
-                    </TableCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {sortedEntries.length === 0 ? (
-                    <TableRow>
-                      <td
-                        colSpan={4}
-                        className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-                      >
-                        No salary entries yet.
-                      </td>
-                    </TableRow>
-                  ) : (
-                    sortedEntries.map((entry) => (
-                      <tr
-                        key={entry.id}
-                        className="hover:bg-gray-50 dark:hover:bg-white/[0.03]"
-                      >
-                        <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                          {formatDate(entry.effectiveDate)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-right tabular-nums font-medium text-gray-900 dark:text-white">
-                          {formatCurrency(entry.amount)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                          {TYPE_LABELS[entry.type]}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                          {entry.notes ?? "—"}
-                        </TableCell>
-                      </tr>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    {doc.name}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
+                No documents uploaded yet.
+              </p>
+            )}
           </section>
         )}
       </div>

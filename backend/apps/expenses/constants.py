@@ -40,6 +40,15 @@ PAYMENT_METHOD_CHOICES = [
     (PAYMENT_METHOD_BANK, "Bank"),
 ]
 
+# Ledger status for individual payments (draft = no ledger entry, posted = create AP dr / Cash cr)
+PAYMENT_LEDGER_DRAFT = 0
+PAYMENT_LEDGER_POSTED = 1
+
+PAYMENT_LEDGER_STATUS_CHOICES = [
+    (PAYMENT_LEDGER_DRAFT, "Draft"),
+    (PAYMENT_LEDGER_POSTED, "Posted"),
+]
+
 # Payment status (for expense header)
 PAYMENT_STATUS_NOT_COMPLETED = 0
 PAYMENT_STATUS_COMPLETED = 1

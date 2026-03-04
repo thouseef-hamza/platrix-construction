@@ -58,8 +58,20 @@ export interface ApiPurchasePayment {
   date: string;
   amount: string;
   reference: string;
+  status: number;
+  status_display?: string;
   created_at: string;
 }
+
+// Backend: 0=Draft, 1=Posted (payment ledger status)
+const PAYMENT_LEDGER_TO_BACKEND: Record<"draft" | "posted", number> = {
+  draft: 0,
+  posted: 1,
+};
+const BACKEND_TO_PAYMENT_LEDGER: Record<number, "draft" | "posted"> = {
+  0: "draft",
+  1: "posted",
+};
 
 export interface ApiPurchase {
   id: number;
@@ -114,6 +126,7 @@ function apiPurchaseToPurchase(api: ApiPurchase): Purchase {
       date: p.date,
       amount: parseFloat(p.amount) || 0,
       reference: p.reference || undefined,
+      status: BACKEND_TO_PAYMENT_LEDGER[p.status] ?? "draft",
     })) ?? undefined;
   return {
     id: String(api.id),
@@ -217,15 +230,95 @@ export interface AddPurchasePaymentPayload {
   date: string;
   amount: number;
   reference?: string;
+  status?: "draft" | "posted";
 }
 
 export async function addPurchasePayment(
   purchaseId: number,
   payload: AddPurchasePaymentPayload
 ): Promise<void> {
-  await api.post(`/purchases/${purchaseId}/payments/`, {
+  const body: Record<string, unknown> = {
     date: payload.date,
     amount: String(payload.amount),
     reference: payload.reference?.trim() ?? "",
-  });
+  };
+  if (payload.status !== undefined)
+    body.status = PAYMENT_LEDGER_TO_BACKEND[payload.status];
+  await api.post(`/purchases/${purchaseId}/payments/`, body);
+}
+
+export async function patchPurchasePayment(
+  purchaseId: number,
+  paymentId: number,
+  payload: { status?: "draft" | "posted" }
+): Promise<void> {
+  const body: Record<string, unknown> = {};
+  if (payload.status !== undefined)
+    body.status = PAYMENT_LEDGER_TO_BACKEND[payload.status];
+  await api.patch(`/purchases/${purchaseId}/payments/${paymentId}/`, body);
+}
+
+// --- Purchase documents (list, upload, download, delete) ---
+
+export interface PurchaseDocument {
+  id: number;
+  name: string;
+  filename: string;
+  file_url: string | null;
+  size: number | null;
+  description: string;
+  created_at: string;
+}
+
+export async function fetchPurchaseDocuments(
+  purchaseId: number
+): Promise<PurchaseDocument[]> {
+  const { data } = await api.get<PurchaseDocument[]>(
+    `/purchases/${purchaseId}/documents/`
+  );
+  return data ?? [];
+}
+
+export async function uploadPurchaseDocument(
+  purchaseId: number,
+  file: File,
+  options?: { name?: string; description?: string }
+): Promise<PurchaseDocument> {
+  const form = new FormData();
+  form.append("file", file);
+  if (options?.name) form.append("name", options.name);
+  if (options?.description) form.append("description", options.description ?? "");
+  const { data } = await api.post<PurchaseDocument>(
+    `/purchases/${purchaseId}/documents/`,
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return data;
+}
+
+export async function deletePurchaseDocument(
+  purchaseId: number,
+  documentId: number
+): Promise<void> {
+  await api.delete(`/purchases/${purchaseId}/documents/${documentId}/`);
+}
+
+export async function downloadPurchaseDocument(
+  purchaseId: number,
+  documentId: number,
+  filename: string
+): Promise<void> {
+  const { data } = await api.get<Blob>(
+    `/purchases/${purchaseId}/documents/${documentId}/download/`,
+    { responseType: "blob" }
+  );
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "document";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

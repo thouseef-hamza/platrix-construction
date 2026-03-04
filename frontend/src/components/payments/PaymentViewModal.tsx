@@ -70,7 +70,7 @@ export default function PaymentViewModal({
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
       <div className="p-6 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">

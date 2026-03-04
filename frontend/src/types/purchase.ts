@@ -15,6 +15,8 @@ export interface ProjectRef {
 export type PurchaseStatus = "draft" | "posted";
 export type PurchasePaymentMethod = "cash" | "bank";
 export type PurchasePaymentStatus = "not_completed" | "completed" | "partial";
+/** Ledger status for a single payment: draft (no ledger) or posted. */
+export type PaymentLedgerStatus = "draft" | "posted";
 
 /** Expense = P&L expense account; Asset = balance sheet asset account. */
 export type PurchaseType = "expense" | "asset";
@@ -58,5 +60,11 @@ export interface Purchase {
   /** Payment status: not_completed, completed, or partial. */
   paymentStatus?: PurchasePaymentStatus;
   /** List of payment transactions against this purchase. */
-  payments?: { id: string; date: string; amount: number; reference?: string }[];
+  payments?: {
+    id: string;
+    date: string;
+    amount: number;
+    reference?: string;
+    status?: PaymentLedgerStatus;
+  }[];
 }

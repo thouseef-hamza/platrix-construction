@@ -5,6 +5,8 @@ from rest_framework import serializers
 from apps.core.models import Document
 
 from .constants import (
+    PAYMENT_LEDGER_DRAFT,
+    PAYMENT_LEDGER_POSTED,
     PAYMENT_STATUS_COMPLETED,
     PAYMENT_STATUS_NOT_COMPLETED,
     PAYMENT_STATUS_PARTIAL,
@@ -62,17 +64,22 @@ class PurchaseLineItemWriteSerializer(serializers.ModelSerializer):
 class PurchasePaymentReadSerializer(serializers.ModelSerializer):
     """Read-only payment."""
 
+    status_display = serializers.CharField(
+        source="get_status_display", read_only=True
+    )
+
     class Meta:
         model = PurchasePayment
-        fields = ("id", "date", "amount", "reference", "created_at")
+        fields = ("id", "date", "amount", "reference", "status", "status_display", "created_at")
 
 
 class PurchasePaymentWriteSerializer(serializers.ModelSerializer):
-    """Create a payment against a purchase."""
+    """Create or update a payment against a purchase."""
 
     class Meta:
         model = PurchasePayment
-        fields = ("date", "amount", "reference")
+        fields = ("date", "amount", "reference", "status")
+        extra_kwargs = {"status": {"default": PAYMENT_LEDGER_DRAFT}}
 
     def validate_amount(self, value):
         if value is not None and value <= 0:
@@ -266,11 +273,17 @@ class PurchaseWriteSerializer(serializers.ModelSerializer):
         purchase.amount = total
         purchase.save(update_fields=["amount"])
         if initial_paid is not None and initial_paid > 0:
+            payment_status = (
+                PAYMENT_LEDGER_POSTED
+                if purchase.status == PURCHASE_STATUS_POSTED
+                else PAYMENT_LEDGER_DRAFT
+            )
             PurchasePayment.objects.create(
                 purchase=purchase,
                 date=purchase.date,
                 amount=initial_paid,
                 reference="",
+                status=payment_status,
             )
             _recompute_payment_status(purchase)
         return purchase

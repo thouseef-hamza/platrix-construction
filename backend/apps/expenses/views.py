@@ -138,3 +138,37 @@ class ExpensePaymentListCreateAPIView(APIView):
             ExpensePaymentReadSerializer(payment).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+def get_payment_for_expense(request, expense_pk, payment_pk):
+    """Return ExpensePayment if it belongs to the given expense and user has access."""
+    qs = get_expense_queryset(request)
+    expense = get_object_or_404(qs, pk=expense_pk)
+    if expense.account_id not in user_account_ids(request):
+        from rest_framework.exceptions import PermissionDenied
+        raise PermissionDenied("You do not have access to this account.")
+    return get_object_or_404(
+        ExpensePayment.objects.filter(expense=expense, is_deleted=False),
+        pk=payment_pk,
+    )
+
+
+class ExpensePaymentDetailAPIView(APIView):
+    """PATCH a single payment (e.g. set status to posted). Requires x-account-id header."""
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, payment_pk):
+        if _current_account_id(request) is None:
+            return Response(
+                {"detail": "x-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        payment = get_payment_for_expense(request, pk, payment_pk)
+        serializer = ExpensePaymentWriteSerializer(
+            payment, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        _recompute_payment_status(payment.expense)
+        return Response(ExpensePaymentReadSerializer(payment).data)

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -13,13 +14,36 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/utils/format";
 import type { Expense, ExpenseCategory } from "@/types/expense";
-import { MOCK_EXPENSES } from "@/data/mockExpenses";
-import { MOCK_PROJECTS } from "@/data/mockProjects";
-import { MOCK_EMPLOYEE_REFS } from "@/data/mockEmployees";
+import { useCompany } from "@/context/CompanyContext";
+import { fetchProjects } from "@/lib/projectsApi";
+import {
+  fetchExpenses,
+  getExpense,
+  createExpense,
+  updateExpense,
+  addExpensePayment,
+  patchExpensePayment,
+  type CreateExpensePayload,
+} from "@/lib/expensesApi";
+import { fetchEmployees } from "@/lib/employeesApi";
 import ExpenseViewModal from "./ExpenseViewModal";
 import ExpenseCreateModal from "./ExpenseCreateModal";
 
+const EXPENSES_QUERY_KEY = "expenses";
 const PAGE_SIZE = 8;
+
+const LABOR_TYPE_TO_BACKEND: Record<"hourly" | "daily", number> = {
+  hourly: 0,
+  daily: 1,
+};
+const PAYMENT_METHOD_TO_BACKEND: Record<"cash" | "bank", number> = {
+  cash: 0,
+  bank: 1,
+};
+const STATUS_TO_BACKEND: Record<"draft" | "posted", number> = {
+  draft: 0,
+  posted: 1,
+};
 
 const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   project: "Project",
@@ -28,8 +52,47 @@ const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   employee_paid: "Employee",
 };
 
+function buildCreatePayload(data: Omit<Expense, "id">): CreateExpensePayload {
+  return {
+    category: data.category,
+    description: data.description ?? "—",
+    amount: data.amount,
+    date: data.date,
+    project: data.project ? Number(data.project.id) : null,
+    labor_type:
+      data.laborType != null ? LABOR_TYPE_TO_BACKEND[data.laborType] : null,
+    quantity: data.quantity ?? null,
+    rate: data.rate ?? null,
+    employee_id: data.employeeRef?.id ?? "",
+    employee_name: data.employeeRef?.name ?? "",
+    payment_method: PAYMENT_METHOD_TO_BACKEND[data.paymentMethod ?? "cash"],
+    paid_amount: data.paidAmount ?? 0,
+    status: STATUS_TO_BACKEND[data.status ?? "posted"],
+  };
+}
+
 export default function ExpensesList() {
-  const [items, setItems] = useState<Expense[]>(() => [...MOCK_EXPENSES]);
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
+  const { data: expenses = [], isLoading } = useQuery({
+    queryKey: [EXPENSES_QUERY_KEY, companyId],
+    queryFn: () => fetchExpenses(),
+    enabled: !!companyId,
+  });
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects", companyId],
+    queryFn: () => fetchProjects(),
+    enabled: !!companyId,
+  });
+  const { data: employeesList = [] } = useQuery({
+    queryKey: ["employees", companyId],
+    queryFn: () => fetchEmployees(),
+    enabled: !!companyId,
+  });
+  const employeeRefs = useMemo(
+    () => employeesList.map((e) => ({ id: e.id, name: e.fullName })),
+    [employeesList]
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | "">("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,11 +100,67 @@ export default function ExpensesList() {
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const projects = useMemo(
-    () => MOCK_PROJECTS.map((p) => ({ id: p.id, name: p.projectName })),
-    []
+  const { data: selectedDetail } = useQuery({
+    queryKey: ["expense", selected?.id],
+    queryFn: () => getExpense(Number(selected!.id)),
+    enabled: !!selected?.id && viewOpen,
+  });
+  const expenseForModal = selectedDetail ?? selected;
+
+  const createMutation = useMutation({
+    mutationFn: createExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: Parameters<typeof updateExpense>[1];
+    }) => updateExpense(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["expense", String(id)] });
+    },
+  });
+  const addPaymentMutation = useMutation({
+    mutationFn: ({
+      expenseId,
+      payload,
+    }: {
+      expenseId: number;
+      payload: Parameters<typeof addExpensePayment>[1];
+    }) => addExpensePayment(expenseId, payload),
+    onSuccess: (_, { expenseId }) => {
+      queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+    },
+  });
+  const patchPaymentMutation = useMutation({
+    mutationFn: ({
+      expenseId,
+      paymentId,
+      payload,
+    }: {
+      expenseId: number;
+      paymentId: number;
+      payload: { status: "draft" | "posted" };
+    }) => patchExpensePayment(expenseId, paymentId, payload),
+    onSuccess: (_, { expenseId }) => {
+      queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+    },
+  });
+
+  const projectRefs = useMemo(
+    () => projects.map((p) => ({ id: p.id, name: p.projectName })),
+    [projects]
   );
 
+  const items = expenses;
   const { pageItems, total, totalPages } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     let list = items;
@@ -71,12 +190,34 @@ export default function ExpensesList() {
   }, [totalPages, currentPage]);
 
   const handleUpdate = (id: string, updates: Partial<Expense>) => {
-    setItems((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
-    );
-    if (selected?.id === id)
-      setSelected((p) => (p ? { ...p, ...updates } : null));
+    const expenseId = Number(id);
+    if (updates.status === "posted") {
+      updateMutation.mutate({ id: expenseId, payload: { status: "posted" } });
+      return;
+    }
+    if (
+      updates.payments != null &&
+      updates.paidAmount != null &&
+      selected?.id === id &&
+      expenseForModal &&
+      updates.payments.length > (expenseForModal.payments?.length ?? 0)
+    ) {
+      const newPayment = updates.payments[updates.payments.length - 1];
+      if (newPayment)
+        addPaymentMutation.mutate({
+          expenseId,
+          payload: {
+            date: newPayment.date,
+            amount: newPayment.amount,
+            reference: newPayment.reference,
+            status: newPayment.status ?? "draft",
+          },
+        });
+      return;
+    }
   };
+
+  if (!companyId) return null;
 
   return (
     <div>
@@ -159,6 +300,12 @@ export default function ExpensesList() {
                       isHeader
                       className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
                     >
+                      Ledger Status
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                    >
                       Description
                     </TableCell>
                     <TableCell
@@ -188,10 +335,19 @@ export default function ExpensesList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {pageItems.length === 0 ? (
+                  {isLoading ? (
                     <TableRow>
                       <td
-                        colSpan={6}
+                        colSpan={7}
+                        className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                      >
+                        Loading…
+                      </td>
+                    </TableRow>
+                  ) : pageItems.length === 0 ? (
+                    <TableRow>
+                      <td
+                        colSpan={7}
                         className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
                       >
                         No expenses match your search.
@@ -218,6 +374,17 @@ export default function ExpensesList() {
                       >
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-700 dark:text-gray-300">
                           {CATEGORY_LABELS[expense.category]}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-start text-theme-sm">
+                          <span
+                            className={
+                              expense.status === "posted"
+                                ? "inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                : "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                            }
+                          >
+                            {expense.status ?? "draft"}
+                          </span>
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm font-medium text-gray-800 dark:text-white/90">
                           {expense.description}
@@ -256,21 +423,31 @@ export default function ExpensesList() {
         </ComponentCard>
       </div>
       <ExpenseViewModal
-        expense={selected}
+        expense={expenseForModal}
         isOpen={viewOpen}
         onClose={() => {
           setViewOpen(false);
           setSelected(null);
         }}
         onUpdate={handleUpdate}
+        onPostPayment={(expenseId, paymentId) =>
+          patchPaymentMutation.mutate({
+            expenseId: Number(expenseId),
+            paymentId: Number(paymentId),
+            payload: { status: "posted" },
+          })
+        }
       />
       <ExpenseCreateModal
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}
-        projects={projects}
-        employees={MOCK_EMPLOYEE_REFS}
+        projects={projectRefs}
+        employees={employeeRefs}
+        isSubmitting={createMutation.isPending}
         onCreate={(data) => {
-          setItems((prev) => [{ ...data, id: `e-${Date.now()}` }, ...prev]);
+          createMutation.mutate(buildCreatePayload(data), {
+            onSuccess: () => setCreateOpen(false),
+          });
         }}
       />
     </div>

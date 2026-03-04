@@ -23,6 +23,7 @@ from .constants import (
     COA_CODE_CASH_BANK,
     COA_CODE_MATERIALS_EXPENSE,
     COA_CODE_PROJECT_EXPENSE,
+    PAYMENT_LEDGER_POSTED,
     PURCHASE_STATUS_POSTED,
 )
 from .models import Purchase, PurchasePayment
@@ -115,10 +116,10 @@ def on_purchase_posted_create_ledger_entry(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=PurchasePayment)
 def on_purchase_payment_created_create_ledger_entry(sender, instance, created, **kwargs):
-    """When a payment is added to a posted purchase, create LedgerEntry: Debit AP (2010), Credit Cash (1010)."""
-    if not created:
-        return
+    """When a payment is posted (status=posted) on a posted purchase, create LedgerEntry: Debit AP (2010), Credit Cash (1010)."""
     if instance.is_deleted:
+        return
+    if instance.status != PAYMENT_LEDGER_POSTED:
         return
     purchase = instance.purchase
     if purchase.status != PURCHASE_STATUS_POSTED:

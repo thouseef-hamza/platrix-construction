@@ -29,7 +29,7 @@ export default function MaterialViewModal({
   if (!material) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg mx-4">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4">
       <div className="p-6 sm:p-8">
         <div className="flex items-center justify-between gap-3 mb-6 pr-16 sm:pr-20">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">

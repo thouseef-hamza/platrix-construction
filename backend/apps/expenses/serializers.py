@@ -3,6 +3,8 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from .constants import (
+    PAYMENT_LEDGER_DRAFT,
+    PAYMENT_LEDGER_POSTED,
     PAYMENT_STATUS_COMPLETED,
     PAYMENT_STATUS_NOT_COMPLETED,
     PAYMENT_STATUS_PARTIAL,
@@ -13,15 +15,20 @@ from .models import Expense, ExpensePayment
 
 
 class ExpensePaymentReadSerializer(serializers.ModelSerializer):
+    status_display = serializers.CharField(
+        source="get_status_display", read_only=True
+    )
+
     class Meta:
         model = ExpensePayment
-        fields = ("id", "date", "amount", "reference", "created_at")
+        fields = ("id", "date", "amount", "reference", "status", "status_display", "created_at")
 
 
 class ExpensePaymentWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExpensePayment
-        fields = ("date", "amount", "reference")
+        fields = ("date", "amount", "reference", "status")
+        extra_kwargs = {"status": {"default": PAYMENT_LEDGER_DRAFT}}
 
     def validate_amount(self, value):
         if value is not None and value <= 0:
@@ -220,11 +227,17 @@ class ExpenseWriteSerializer(serializers.ModelSerializer):
             paid_amount=Decimal("0.00"),
         )
         if initial_paid is not None and initial_paid > 0:
+            payment_status = (
+                PAYMENT_LEDGER_POSTED
+                if expense.status == EXPENSE_STATUS_POSTED
+                else PAYMENT_LEDGER_DRAFT
+            )
             ExpensePayment.objects.create(
                 expense=expense,
                 date=expense.date,
                 amount=initial_paid,
                 reference="",
+                status=payment_status,
             )
             _recompute_payment_status(expense)
         return expense

@@ -8,11 +8,17 @@ import { formatCurrency } from "@/utils/format";
 const inputClass =
   "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
 
+type PaymentLedgerStatus = "draft" | "posted";
+
 interface MakePaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   balance: number;
-  onSubmit: (amount: number, paymentDate: string, attachments: { name: string }[]) => void;
+  onSubmit: (
+    amount: number,
+    paymentDate: string,
+    status: PaymentLedgerStatus
+  ) => void;
 }
 
 export default function MakePaymentModal({
@@ -23,7 +29,6 @@ export default function MakePaymentModal({
 }: MakePaymentModalProps) {
   const [amount, setAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
-  const [files, setFiles] = useState<FileList | null>(null);
   const [amountError, setAmountError] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
 
@@ -31,13 +36,12 @@ export default function MakePaymentModal({
     if (isOpen) {
       setAmount("");
       setPaymentDate(new Date().toISOString().slice(0, 10));
-      setFiles(null);
       setAmountError(null);
       setDateError(null);
     }
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent, status: PaymentLedgerStatus) => {
     e.preventDefault();
     setAmountError(null);
     setDateError(null);
@@ -47,13 +51,12 @@ export default function MakePaymentModal({
     if (amountNum <= 0) setAmountError("Amount must be greater than 0.");
     else if (amountNum > balance) setAmountError("Payment cannot exceed the balance due.");
     if (missingDate || amountNum <= 0 || amountNum > balance) return;
-    const attachmentNames = files ? Array.from(files).map((f) => ({ name: f.name })) : [];
-    onSubmit(amountNum, paymentDate, attachmentNames);
+    onSubmit(amountNum, paymentDate, status);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md mx-4">
-      <form onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4">
+      <form onSubmit={(e) => e.preventDefault()} noValidate className="p-6 sm:p-8">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Make payment
         </h2>
@@ -99,22 +102,6 @@ export default function MakePaymentModal({
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{dateError}</p>
             )}
           </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Document (optional)
-            </label>
-            <input
-              type="file"
-              multiple
-              className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-brand-600 hover:file:bg-brand-100 dark:file:bg-brand-500/10 dark:file:text-brand-400"
-              onChange={(e) => setFiles(e.target.files ?? null)}
-            />
-            {files?.length ? (
-              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                {files.length} file(s) selected
-              </p>
-            ) : null}
-          </div>
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -125,10 +112,18 @@ export default function MakePaymentModal({
             Cancel
           </button>
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => handleSubmit(e, "draft")}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Save as draft
+          </button>
+          <button
+            type="button"
+            onClick={(e) => handleSubmit(e, "posted")}
             className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
           >
-            Add payment
+            Post
           </button>
         </div>
       </form>

@@ -271,7 +271,7 @@ export default function ProjectViewModal({
 
   return (
     <>
-    <Modal isOpen={isOpen} onClose={onClose} className="w-full max-w-[95vw] mx-4 max-h-[90vh] overflow-y-auto">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
       <div className="p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -686,7 +686,7 @@ export default function ProjectViewModal({
     <Modal
       isOpen={!!previewDocument}
       onClose={() => setPreviewDocument(null)}
-      className="max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+      className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
     >
       {previewDocument && (
         <div className="flex flex-col flex-1 min-h-0 p-6">
