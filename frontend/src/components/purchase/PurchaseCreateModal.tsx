@@ -1,0 +1,484 @@
+"use client";
+
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { Modal } from "@/components/ui/modal";
+import ConfirmPostModal from "./ConfirmPostModal";
+import Label from "@/components/form/Label";
+import DatePicker from "@/components/form/date-picker";
+import type { Purchase, PurchaseLineItem, SupplierRef, ProjectRef, PurchaseType, AccountRef } from "@/types/purchase";
+import type { Material } from "@/types/material";
+import type { Account } from "@/types/chartOfAccounts";
+import { formatCurrency } from "@/utils/format";
+
+const inputClass =
+  "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
+const selectClass = inputClass;
+const inputSm = "h-10 rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 " +
+  "focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/10 dark:focus:border-brand-800";
+
+interface PurchaseCreateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  accounts: Account[];
+  suppliers: SupplierRef[];
+  projects: ProjectRef[];
+  materials: Material[];
+  onCreate: (data: Omit<Purchase, "id">) => void;
+}
+
+interface LineRow {
+  id: string;
+  materialId: string;
+  quantity: string;
+  rate: string;
+}
+
+const expenseOrAssetAccounts = (accounts: Account[]) =>
+  accounts.filter((a) => a.type === "expense" || a.type === "asset");
+
+/** Asset accounts to exclude from purchase asset dropdown (cash, receivables). */
+const EXCLUDED_ASSET_CODES = ["1110", "1120"]; // Cash and Bank, Accounts Receivable
+
+const assetAccountsForPurchase = (accounts: Account[]) =>
+  accounts.filter(
+    (a) => a.type === "asset" && !EXCLUDED_ASSET_CODES.includes(a.code)
+  );
+
+export default function PurchaseCreateModal({
+  isOpen,
+  onClose,
+  accounts,
+  suppliers,
+  projects,
+  materials,
+  onCreate,
+}: PurchaseCreateModalProps) {
+  const [purchaseType, setPurchaseType] = useState<PurchaseType>("expense");
+  const [accountId, setAccountId] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+
+  const typeAccounts =
+    purchaseType === "expense"
+      ? expenseOrAssetAccounts(accounts).filter((a) => a.type === "expense")
+      : assetAccountsForPurchase(accounts);
+  useEffect(() => {
+    if (isOpen && typeAccounts.length > 0 && !typeAccounts.some((a) => a.id === accountId)) {
+      setAccountId(typeAccounts[0]!.id);
+    }
+  }, [isOpen, typeAccounts, accountId]);
+  const [reference, setReference] = useState("");
+  const [date, setDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank">("cash");
+  const [paidAmount, setPaidAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [lines, setLines] = useState<LineRow[]>([
+    { id: "row-1", materialId: "", quantity: "", rate: "" },
+  ]);
+  const [files, setFiles] = useState<FileList | null>(null);
+  const [showPostConfirm, setShowPostConfirm] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const submitActionRef = useRef<"draft" | "post">("draft");
+
+  const addLine = useCallback(() => {
+    setLines((prev) => [
+      ...prev,
+      { id: `row-${Date.now()}`, materialId: "", quantity: "", rate: "" },
+    ]);
+  }, []);
+
+  const removeLine = useCallback((id: string) => {
+    setLines((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
+  }, []);
+
+  const updateLine = useCallback((id: string, field: keyof LineRow, value: string) => {
+    setLines((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
+    );
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const account = typeAccounts.find((a) => a.id === accountId);
+    if (!account) return;
+    const supplier = suppliers.find((s) => s.id === supplierId);
+    if (!supplier) return;
+    const project = projectId ? projects.find((p) => p.id === projectId) ?? null : null;
+    const lineItems: PurchaseLineItem[] = lines
+      .filter((r) => r.materialId && r.quantity && r.rate)
+      .map((r) => {
+        const mat = materials.find((m) => m.id === r.materialId)!;
+        const qty = parseFloat(r.quantity) || 0;
+        const rate = parseFloat(r.rate) || 0;
+        return {
+          id: r.id,
+          materialId: mat.id,
+          materialName: mat.name,
+          materialCode: mat.code,
+          unit: mat.unit,
+          quantity: qty,
+          rate,
+          amount: qty * rate,
+        };
+      });
+    if (lineItems.length === 0) return;
+    const amount = lineItems.reduce((sum, l) => sum + l.amount, 0);
+    const paidAmountNum = parseFloat(paidAmount) || 0;
+    const attachments = files
+      ? Array.from(files).map((f) => ({ name: f.name }))
+      : undefined;
+    const status = submitActionRef.current;
+    const paymentStatus =
+      paidAmountNum >= amount ? "completed" : paidAmountNum > 0 ? "partial" : "not_completed";
+    const accountRef: AccountRef = { id: account.id, code: account.code, name: account.name };
+    onCreate({
+      purchaseType,
+      account: accountRef,
+      project: project ?? undefined,
+      supplier,
+      reference: reference.trim() || "—",
+      date: date || new Date().toISOString().slice(0, 10),
+      status,
+      paymentMethod,
+      lineItems,
+      amount,
+      description: description.trim() || undefined,
+      attachments,
+      paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
+      paymentStatus,
+    });
+    resetForm();
+    onClose();
+  };
+
+  function resetForm() {
+    setPurchaseType("expense");
+    setAccountId("");
+    setProjectId("");
+    setSupplierId("");
+    setReference("");
+    setDate("");
+    setPaymentMethod("cash");
+    setPaidAmount("");
+    setDescription("");
+    setLines([{ id: `row-${Date.now()}`, materialId: "", quantity: "", rate: "" }]);
+    setFiles(null);
+  }
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const totalAmount = lines.reduce((sum, r) => {
+    const qty = parseFloat(r.quantity) || 0;
+    const rate = parseFloat(r.rate) || 0;
+    return sum + qty * rate;
+  }, 0);
+  const paidAmountNum = parseFloat(paidAmount) || 0;
+  const balance = totalAmount - paidAmountNum;
+
+  return (
+    <>
+    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+      <form ref={formRef} onSubmit={handleSubmit} className="p-6 sm:p-8">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+          Add Purchase
+        </h2>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Expense or Asset</Label>
+              <select
+                className={selectClass}
+                value={purchaseType}
+                onChange={(e) => {
+                  const v = e.target.value as PurchaseType;
+                  setPurchaseType(v);
+                  const next =
+                    v === "expense"
+                      ? expenseOrAssetAccounts(accounts).filter((a) => a.type === "expense")
+                      : assetAccountsForPurchase(accounts);
+                  setAccountId(next[0]?.id ?? "");
+                }}
+              >
+                <option value="expense">Expense</option>
+                <option value="asset">Asset</option>
+              </select>
+            </div>
+            <div>
+              <Label>{purchaseType === "expense" ? "Expense" : "Asset"} account</Label>
+              <select
+                className={selectClass}
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                required
+              >
+                <option value="">Select account</option>
+                {typeAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code} – {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Project (optional)</Label>
+              <select
+                className={selectClass}
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+              >
+                <option value="">None</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Supplier</Label>
+              <select
+                className={selectClass}
+                value={supplierId}
+                onChange={(e) => setSupplierId(e.target.value)}
+                required
+              >
+                <option value="">Select supplier</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Reference / PO #</Label>
+              <input
+                type="text"
+                className={inputClass}
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                placeholder="e.g. PO-2024-001"
+              />
+            </div>
+            <div>
+              <DatePicker
+                id="purchase-date"
+                label="Date"
+                placeholder="Select date"
+                value={date}
+                onChange={(_, dateStr) => setDate(dateStr ?? "")}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label>Materials</Label>
+              <button
+                type="button"
+                onClick={addLine}
+                className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+              >
+                + Add line
+              </button>
+            </div>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.04]">
+                    <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Material</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400 w-24">Qty</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400 w-28">Rate (QAR)</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400 w-28">Amount</th>
+                    <th className="w-10" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((row) => {
+                    const mat = materials.find((m) => m.id === row.materialId);
+                    const qty = parseFloat(row.quantity) || 0;
+                    const rate = parseFloat(row.rate) || (mat?.standardRate ?? 0);
+                    const amount = qty * rate;
+                    return (
+                      <tr key={row.id} className="border-b border-gray-100 dark:border-gray-800">
+                        <td className="px-3 py-2">
+                          <select
+                            className={inputSm + " w-full min-w-[180px]"}
+                            value={row.materialId}
+                            onChange={(e) => {
+                              const id = e.target.value;
+                              updateLine(row.id, "materialId", id);
+                              const m = materials.find((x) => x.id === id);
+                              if (m && !row.rate) updateLine(row.id, "rate", String(m.standardRate));
+                            }}
+                          >
+                            <option value="">Select material</option>
+                            {materials.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name} ({m.code})
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step="any"
+                            className={inputSm + " w-full text-right"}
+                            value={row.quantity}
+                            onChange={(e) => updateLine(row.id, "quantity", e.target.value)}
+                            placeholder="0"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className={inputSm + " w-full text-right"}
+                            value={row.rate}
+                            onChange={(e) => updateLine(row.id, "rate", e.target.value)}
+                            placeholder="0"
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">
+                          {formatCurrency(amount)}
+                        </td>
+                        <td className="px-1 py-2">
+                          <button
+                            type="button"
+                            onClick={() => removeLine(row.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                            aria-label="Remove line"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">
+              Total: {formatCurrency(totalAmount)}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Payment method</Label>
+              <select
+                className={selectClass}
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value as "cash" | "bank")}
+              >
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+              </select>
+            </div>
+            <div>
+              <Label>Paid amount (QAR)</Label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className={inputClass}
+                value={paidAmount}
+                onChange={(e) => setPaidAmount(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] p-4 space-y-2">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Summary</h3>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Paid</span>
+              <span className="tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(paidAmountNum)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Balance</span>
+              <span className={`tabular-nums font-medium ${balance <= 0 ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
+                {balance < 0 ? `-${formatCurrency(Math.abs(balance))}` : formatCurrency(balance)}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <Label>Description (optional)</Label>
+            <input
+              type="text"
+              className={inputClass}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g. Steel rebar and mesh"
+            />
+          </div>
+          <div>
+            <Label>Upload documents</Label>
+            <input
+              type="file"
+              multiple
+              className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-brand-600 hover:file:bg-brand-100 dark:file:bg-brand-500/10 dark:file:text-brand-400"
+              onChange={(e) => setFiles(e.target.files ?? null)}
+            />
+            {files?.length ? (
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {files.length} file(s) selected
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="mt-8 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              submitActionRef.current = "draft";
+              formRef.current?.requestSubmit();
+            }}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Draft
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowPostConfirm(true)}
+            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+          >
+            Post
+          </button>
+        </div>
+      </form>
+    </Modal>
+    <ConfirmPostModal
+      isOpen={showPostConfirm}
+      onClose={() => setShowPostConfirm(false)}
+      onConfirm={() => {
+        setShowPostConfirm(false);
+        submitActionRef.current = "post";
+        formRef.current?.requestSubmit();
+      }}
+      title="Post Purchase"
+      message="Once posted, this purchase cannot be edited. Posting will reflect in the accounts. Do you want to continue?"
+    />
+  </>
+  );
+}
