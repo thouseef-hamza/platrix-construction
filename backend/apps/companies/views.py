@@ -22,7 +22,7 @@ def user_account_ids(request):
 
 
 def _current_account_id(request):
-    """Account from a-account-id header; must be in user_account_ids. Returns None if missing/invalid."""
+    """Account from x-account-id header; must be in user_account_ids. Returns None if missing/invalid."""
     account_id = getattr(request, "current_account_id", None)
     if account_id is None:
         return None
@@ -46,14 +46,14 @@ def get_company_queryset(request):
 
 
 class CompanyListCreateView(APIView):
-    """GET list, POST create companies. Requires a-account-id header. Query param: company_type (0=Client, 1=Supplier, 2=Subcontractor)."""
+    """GET list, POST create companies. Requires x-account-id header. Query param: company_type (0=Client, 1=Supplier, 2=Subcontractor)."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         if _current_account_id(request) is None:
             return Response(
-                {"detail": "a-account-id header is required."},
+                {"detail": "x-account-id header is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         qs = get_company_queryset(request)
@@ -64,7 +64,7 @@ class CompanyListCreateView(APIView):
         account_id = _current_account_id(request)
         if account_id is None:
             return Response(
-                {"detail": "a-account-id header is required."},
+                {"detail": "x-account-id header is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         account = get_object_or_404(Account, pk=account_id)

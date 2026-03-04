@@ -26,7 +26,7 @@ export default function CompanyLayout({
     }
   }, [authReady, isAuthenticated, router]);
 
-  // Sync current account with URL so a-account-id header matches the account page
+  // Sync current account with URL so x-account-id header matches the account page
   useEffect(() => {
     if (!id || !accounts.length) return;
     const n = parseInt(id, 10);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -12,11 +13,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Material } from "@/types/material";
-import { MOCK_MATERIALS } from "@/data/mockMaterials";
+import { useCompany } from "@/context/CompanyContext";
+import { fetchMaterials, createMaterial, updateMaterial } from "@/lib/materialsApi";
 import MaterialViewModal from "./MaterialViewModal";
 import MaterialCreateModal from "./MaterialCreateModal";
+import MaterialEditModal from "./MaterialEditModal";
 
 const PAGE_SIZE = 5;
+const MATERIALS_QUERY_KEY = "materials";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-QA", {
@@ -28,12 +32,46 @@ function formatCurrency(value: number): string {
 }
 
 export default function MaterialsList() {
-  const [materials, setMaterials] = useState<Material[]>(() => [...MOCK_MATERIALS]);
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
+  const { data: materials = [], isLoading } = useQuery({
+    queryKey: [MATERIALS_QUERY_KEY, companyId],
+    queryFn: () => fetchMaterials(),
+    enabled: !!companyId,
+  });
+  const createMutation = useMutation({
+    mutationFn: (payload: Omit<Material, "id">) =>
+      createMaterial({
+        name: payload.name,
+        code: payload.code,
+        unit: payload.unit,
+        rate: payload.rate,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [MATERIALS_QUERY_KEY, companyId] });
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: (updated: Material) =>
+      updateMaterial(updated.id, {
+        name: updated.name,
+        code: updated.code,
+        unit: updated.unit,
+        rate: updated.rate,
+      }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: [MATERIALS_QUERY_KEY, companyId] });
+      setSelectedMaterial(updated);
+      setMaterialToEdit(null);
+    },
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
 
   const filteredAndPaginated = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -62,14 +100,26 @@ export default function MaterialsList() {
   }, [totalPages, currentPage]);
 
   const handleCreate = (data: Omit<Material, "id">) => {
-    const id = `m-${Date.now()}`;
-    setMaterials((prev) => [{ ...data, id }, ...prev]);
+    createMutation.mutate(data, {
+      onSuccess: () => setIsCreateModalOpen(false),
+    });
   };
 
   const handleRowClick = (material: Material) => {
     setSelectedMaterial(material);
     setIsViewModalOpen(true);
   };
+
+  const handleEdit = (material: Material) => {
+    setIsViewModalOpen(false);
+    setMaterialToEdit(material);
+  };
+
+  const handleUpdate = (updated: Material) => {
+    updateMutation.mutate(updated);
+  };
+
+  if (!companyId) return null;
 
   return (
     <div>
@@ -98,6 +148,11 @@ export default function MaterialsList() {
       </div>
       <div className="space-y-6">
         <ComponentCard>
+          {isLoading && (
+            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Loading materials…
+            </p>
+          )}
           <div className="mb-6 space-y-4">
             <div className="max-w-xs">
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -157,7 +212,9 @@ export default function MaterialsList() {
                         colSpan={4}
                         className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
                       >
-                        No materials match your search.
+                        {materials.length === 0
+                          ? "No materials yet. Add one to get started."
+                          : "No materials match your search."}
                       </td>
                     </TableRow>
                   ) : (
@@ -182,10 +239,10 @@ export default function MaterialsList() {
                           {material.code}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {material.unit}
+                          {material.unitDisplay}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-400 tabular-nums">
-                          {formatCurrency(material.standardRate)}
+                          {formatCurrency(material.rate)}
                         </TableCell>
                       </tr>
                     ))
@@ -217,11 +274,20 @@ export default function MaterialsList() {
           setIsViewModalOpen(false);
           setSelectedMaterial(null);
         }}
+        onEdit={handleEdit}
+      />
+      <MaterialEditModal
+        material={materialToEdit}
+        isOpen={!!materialToEdit}
+        onClose={() => setMaterialToEdit(null)}
+        onUpdate={handleUpdate}
+        isSubmitting={updateMutation.isPending}
       />
       <MaterialCreateModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={handleCreate}
+        isSubmitting={createMutation.isPending}
       />
     </div>
   );

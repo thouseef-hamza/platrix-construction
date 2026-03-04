@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import type { Material } from "@/types/material";
@@ -8,7 +8,6 @@ import type { Material } from "@/types/material";
 const inputClass =
   "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
 
-// Must match backend apps/inventory/constants.py UNIT_* and UNIT_CHOICES
 const UNIT_OPTIONS: { value: number; label: string }[] = [
   { value: 0, label: "Piece" },
   { value: 1, label: "Kg" },
@@ -22,53 +21,56 @@ const UNIT_OPTIONS: { value: number; label: string }[] = [
   { value: 9, label: "Other" },
 ];
 
-interface MaterialCreateModalProps {
+interface MaterialEditModalProps {
+  material: Material | null;
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (data: Omit<Material, "id">) => void;
+  onUpdate: (updated: Material) => void;
   isSubmitting?: boolean;
 }
 
-export default function MaterialCreateModal({
+export default function MaterialEditModal({
+  material,
   isOpen,
   onClose,
-  onCreate,
+  onUpdate,
   isSubmitting = false,
-}: MaterialCreateModalProps) {
+}: MaterialEditModalProps) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [unit, setUnit] = useState<number>(0);
   const [rate, setRate] = useState("");
 
+  useEffect(() => {
+    if (material && isOpen) {
+      setName(material.name);
+      setCode(material.code);
+      setUnit(material.unit);
+      setRate(String(material.rate));
+    }
+  }, [material, isOpen]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!material) return;
     const rateNum = parseFloat(rate) || 0;
-    onCreate({
+    onUpdate({
+      ...material,
       name: name.trim() || "Unnamed Material",
       code: code.trim() || "—",
       unit,
       rate: rateNum,
     });
-    setName("");
-    setCode("");
-    setUnit(0);
-    setRate("");
     onClose();
   };
 
-  const handleClose = () => {
-    setName("");
-    setCode("");
-    setUnit(0);
-    setRate("");
-    onClose();
-  };
+  if (!material) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-lg mx-4">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg mx-4">
       <form onSubmit={handleSubmit} className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Add Material
+          Edit Material
         </h2>
         <div className="space-y-4">
           <div>
@@ -122,7 +124,7 @@ export default function MaterialCreateModal({
         <div className="mt-8 flex justify-end gap-3">
           <button
             type="button"
-            onClick={handleClose}
+            onClick={onClose}
             className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Cancel
@@ -132,7 +134,7 @@ export default function MaterialCreateModal({
             disabled={isSubmitting}
             className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
           >
-            {isSubmitting ? "Creating…" : "Create"}
+            {isSubmitting ? "Saving…" : "Save"}
           </button>
         </div>
       </form>

@@ -27,7 +27,7 @@ def user_account_ids(request):
 
 
 def _current_account_id(request):
-    """Account from a-account-id header; must be in user_account_ids. Returns None if missing/invalid."""
+    """Account from x-account-id header; must be in user_account_ids. Returns None if missing/invalid."""
     account_id = getattr(request, "current_account_id", None)
     if account_id is None:
         return None
@@ -58,14 +58,14 @@ def get_journal_entry_queryset(request):
 
 
 class ChartOfAccountListCreateView(APIView):
-    """GET list, POST create chart of accounts. Requires a-account-id header for scoping."""
+    """GET list, POST create chart of accounts. Requires x-account-id header for scoping."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         if _current_account_id(request) is None:
             return Response(
-                {"detail": "a-account-id header is required."},
+                {"detail": "x-account-id header is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         qs = get_chart_of_account_queryset(request)
@@ -76,7 +76,7 @@ class ChartOfAccountListCreateView(APIView):
         account_id = _current_account_id(request)
         if account_id is None:
             return Response(
-                {"detail": "a-account-id header is required."},
+                {"detail": "x-account-id header is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         account = get_object_or_404(Account, pk=account_id)
@@ -135,14 +135,14 @@ class ChartOfAccountDetailView(APIView):
 
 
 class JournalEntryListCreateView(APIView):
-    """GET list, POST create journal entries. Requires a-account-id header. POST can omit entry_number."""
+    """GET list, POST create journal entries. Requires x-account-id header. POST can omit entry_number."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         if _current_account_id(request) is None:
             return Response(
-                {"detail": "a-account-id header is required."},
+                {"detail": "x-account-id header is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         qs = get_journal_entry_queryset(request)
@@ -153,7 +153,7 @@ class JournalEntryListCreateView(APIView):
         account_id = _current_account_id(request)
         if account_id is None:
             return Response(
-                {"detail": "a-account-id header is required."},
+                {"detail": "x-account-id header is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         account = get_object_or_404(Account, pk=account_id)
@@ -216,7 +216,7 @@ class JournalEntryDetailView(APIView):
 
 
 class JournalEntryNextNumberView(APIView):
-    """GET with a-account-id header → { "entry_number": "JE-2025-00001" }."""
+    """GET with x-account-id header → { "entry_number": "JE-2025-00001" }."""
 
     permission_classes = [IsAuthenticated]
 
@@ -224,7 +224,7 @@ class JournalEntryNextNumberView(APIView):
         account_id = _current_account_id(request)
         if account_id is None:
             return Response(
-                {"detail": "a-account-id header is required."},
+                {"detail": "x-account-id header is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         account = get_object_or_404(Account, pk=account_id)

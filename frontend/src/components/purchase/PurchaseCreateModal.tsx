@@ -302,9 +302,9 @@ export default function PurchaseCreateModal({
                 </thead>
                 <tbody>
                   {lines.map((row) => {
-                    const mat = materials.find((m) => m.id === row.materialId);
+                    const mat = materials.find((m) => String(m.id) === row.materialId);
                     const qty = parseFloat(row.quantity) || 0;
-                    const rate = parseFloat(row.rate) || (mat?.standardRate ?? 0);
+                    const rate = parseFloat(row.rate) || (mat?.rate ?? 0);
                     const amount = qty * rate;
                     return (
                       <tr key={row.id} className="border-b border-gray-100 dark:border-gray-800">
@@ -315,13 +315,13 @@ export default function PurchaseCreateModal({
                             onChange={(e) => {
                               const id = e.target.value;
                               updateLine(row.id, "materialId", id);
-                              const m = materials.find((x) => x.id === id);
-                              if (m && !row.rate) updateLine(row.id, "rate", String(m.standardRate));
+                              const m = materials.find((x) => String(x.id) === id);
+                              if (m && !row.rate) updateLine(row.id, "rate", String(m.rate));
                             }}
                           >
                             <option value="">Select material</option>
                             {materials.map((m) => (
-                              <option key={m.id} value={m.id}>
+                              <option key={m.id} value={String(m.id)}>
                                 {m.name} ({m.code})
                               </option>
                             ))}

@@ -1,7 +1,8 @@
 export interface Material {
-  id: string;
+  id: number;
   name: string;
   code: string;
-  unit: string;
-  standardRate: number;
+  unit: number;
+  unitDisplay: string;
+  rate: number;
 }

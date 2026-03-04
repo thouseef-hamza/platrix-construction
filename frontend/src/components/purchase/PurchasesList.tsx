@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -16,14 +17,23 @@ import type { Purchase, PurchasePaymentStatus } from "@/types/purchase";
 import { MOCK_PURCHASES } from "@/data/mockPurchases";
 import { MOCK_SUPPLIERS } from "@/data/mockCompanies";
 import { MOCK_PROJECTS } from "@/data/mockProjects";
-import { MOCK_MATERIALS } from "@/data/mockMaterials";
 import { MOCK_ACCOUNTS } from "@/data/mockAccounts";
+import { useCompany } from "@/context/CompanyContext";
+import { fetchMaterials } from "@/lib/materialsApi";
 import PurchaseViewModal from "./PurchaseViewModal";
 import PurchaseCreateModal from "./PurchaseCreateModal";
+
+const MATERIALS_QUERY_KEY = "materials";
 
 const PAGE_SIZE = 5;
 
 export default function PurchasesList() {
+  const { companyId } = useCompany();
+  const { data: materials = [] } = useQuery({
+    queryKey: [MATERIALS_QUERY_KEY, companyId],
+    queryFn: () => fetchMaterials(),
+    enabled: !!companyId,
+  });
   const [items, setItems] = useState<Purchase[]>(() => [...MOCK_PURCHASES]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -284,7 +294,7 @@ export default function PurchasesList() {
         accounts={MOCK_ACCOUNTS}
         suppliers={MOCK_SUPPLIERS}
         projects={MOCK_PROJECTS.map((p) => ({ id: p.id, name: p.projectName }))}
-        materials={MOCK_MATERIALS}
+        materials={materials}
         onCreate={(data) => {
           setItems((prev) => [{ ...data, id: `pu-${Date.now()}` }, ...prev]);
         }}

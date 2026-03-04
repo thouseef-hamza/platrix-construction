@@ -102,7 +102,7 @@ AUTH_USER_MODEL = "users.User"
 # CORS: allow all origins in dev; override in prod
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 from corsheaders.conf import default_headers as _cors_default_headers
-CORS_ALLOW_HEADERS = list(_cors_default_headers) + ["a-account-id"]
+CORS_ALLOW_HEADERS = list(_cors_default_headers) + ["x-account-id"]
 CORS_ALLOWED_ORIGINS = [
     o.strip()
     for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")

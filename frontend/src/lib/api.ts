@@ -13,7 +13,7 @@ export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
-/** Set current account id for a-account-id header. Call from AccountContext when current account changes. */
+/** Set current account id for x-account-id header. Call from AccountContext when current account changes. */
 export function setCurrentAccountId(id: number | null) {
   currentAccountId = id;
 }
@@ -28,7 +28,7 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${authToken}`;
   }
   if (currentAccountId != null) {
-    config.headers["a-account-id"] = String(currentAccountId);
+    config.headers["x-account-id"] = String(currentAccountId);
   }
   return config;
 });
