@@ -1,0 +1,58 @@
+"""Constants for expenses app."""
+
+# Expense status
+EXPENSE_STATUS_DRAFT = 0
+EXPENSE_STATUS_POSTED = 1
+
+EXPENSE_STATUS_CHOICES = [
+    (EXPENSE_STATUS_DRAFT, "Draft"),
+    (EXPENSE_STATUS_POSTED, "Posted"),
+]
+
+# Expense category (matches frontend: project, general, outsourced_labor, employee_paid)
+EXPENSE_CATEGORY_GENERAL = 0
+EXPENSE_CATEGORY_PROJECT = 1
+EXPENSE_CATEGORY_OUTSOURCED_LABOR = 2
+EXPENSE_CATEGORY_EMPLOYEE_PAID = 3
+
+EXPENSE_CATEGORY_CHOICES = [
+    (EXPENSE_CATEGORY_GENERAL, "General"),
+    (EXPENSE_CATEGORY_PROJECT, "Project"),
+    (EXPENSE_CATEGORY_OUTSOURCED_LABOR, "Outsourced labor"),
+    (EXPENSE_CATEGORY_EMPLOYEE_PAID, "Employee-paid"),
+]
+
+# Labor type (for outsourced_labor)
+LABOR_TYPE_HOURLY = 0
+LABOR_TYPE_DAILY = 1
+
+LABOR_TYPE_CHOICES = [
+    (LABOR_TYPE_HOURLY, "Hourly"),
+    (LABOR_TYPE_DAILY, "Daily"),
+]
+
+# Payment method
+PAYMENT_METHOD_CASH = 0
+PAYMENT_METHOD_BANK = 1
+
+PAYMENT_METHOD_CHOICES = [
+    (PAYMENT_METHOD_CASH, "Cash"),
+    (PAYMENT_METHOD_BANK, "Bank"),
+]
+
+# Payment status (for expense header)
+PAYMENT_STATUS_NOT_COMPLETED = 0
+PAYMENT_STATUS_COMPLETED = 1
+PAYMENT_STATUS_PARTIAL = 2
+
+PAYMENT_STATUS_CHOICES = [
+    (PAYMENT_STATUS_NOT_COMPLETED, "Not completed"),
+    (PAYMENT_STATUS_COMPLETED, "Completed"),
+    (PAYMENT_STATUS_PARTIAL, "Partial"),
+]
+
+# Chart of account codes for ledger
+COA_CODE_CASH_BANK = "1010"
+COA_CODE_ACCOUNTS_PAYABLE = "2010"
+COA_CODE_PROJECT_EXPENSE = "5010"
+COA_CODE_OTHER_EXPENSE = "5080"
