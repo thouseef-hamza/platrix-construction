@@ -5,6 +5,7 @@ import UserDropdown from "@/components/header/UserDropdown";
 import AccountSwitcher from "@/components/header/AccountSwitcher";
 import { useSidebar } from "@/context/SidebarContext";
 import { useCompany } from "@/context/CompanyContext";
+import { useAccount } from "@/context/AccountContext";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -12,6 +13,7 @@ import React, { useState } from "react";
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { basePath } = useCompany();
+  const { accounts } = useAccount();
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
   const handleToggle = () => {
@@ -106,9 +108,11 @@ const AppHeader: React.FC = () => {
             </svg>
           </button>
 
-          <div className="hidden lg:flex lg:items-center">
-            <AccountSwitcher />
-          </div>
+          {accounts.length > 1 && (
+            <div className="hidden lg:flex lg:items-center">
+              <AccountSwitcher />
+            </div>
+          )}
         </div>
         <div
           className={`${

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export type Account = {
   id: string;
@@ -17,12 +18,7 @@ type AccountContextType = {
 };
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
-
-const DEFAULT_ACCOUNTS: Account[] = [
-  { id: "1", name: "Default Company", companyCode: "DEF-001" },
-  { id: "2", name: "ABC Construction", companyCode: "ABC-002" },
-  { id: "3", name: "XYZ Builders", companyCode: "XYZ-003" },
-];
+const CURRENT_ACCOUNT_KEY = "bf_current_account_id";
 
 export const useAccount = () => {
   const context = useContext(AccountContext);
@@ -32,33 +28,63 @@ export const useAccount = () => {
   return context;
 };
 
+function loadCurrentAccountId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(CURRENT_ACCOUNT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveCurrentAccountId(id: string | null) {
+  if (typeof window === "undefined") return;
+  if (id) localStorage.setItem(CURRENT_ACCOUNT_KEY, id);
+  else localStorage.removeItem(CURRENT_ACCOUNT_KEY);
+}
+
 export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [accounts, setAccountsState] = useState<Account[]>(DEFAULT_ACCOUNTS);
-  const [currentAccount, setCurrentAccountState] = useState<Account | null>(
-    DEFAULT_ACCOUNTS[0] ?? null
-  );
+  const { isAuthenticated, accounts: authAccounts } = useAuth();
+  const [currentAccountId, setCurrentAccountIdState] = useState<string | null>(null);
+
+  const accounts: Account[] = isAuthenticated
+    ? authAccounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        companyCode: a.role_display || undefined,
+      }))
+    : [];
+
+  const currentAccount =
+    accounts.find((a) => a.id === currentAccountId) ?? accounts[0] ?? null;
+
+  useEffect(() => {
+    if (!accounts.length) {
+      setCurrentAccountIdState(null);
+      saveCurrentAccountId(null);
+      return;
+    }
+    const storedId = loadCurrentAccountId();
+    const valid = storedId && accounts.some((a) => a.id === storedId);
+    const nextId = valid ? storedId : accounts[0].id;
+    setCurrentAccountIdState(nextId);
+    if (!valid) saveCurrentAccountId(nextId);
+  }, [isAuthenticated, authAccounts]);
 
   const setCurrentAccount = useCallback((account: Account) => {
-    setCurrentAccountState(account);
+    setCurrentAccountIdState(account.id);
+    saveCurrentAccountId(account.id);
   }, []);
 
-  const switchAccount = useCallback(
-    (accountId: string) => {
-      const account = accounts.find((a) => a.id === accountId);
-      if (account) setCurrentAccountState(account);
-    },
-    [accounts]
-  );
+  const switchAccount = useCallback((accountId: string) => {
+    setCurrentAccountIdState(accountId);
+    saveCurrentAccountId(accountId);
+  }, []);
 
-  const setAccounts = useCallback((newAccounts: Account[]) => {
-    setAccountsState(newAccounts);
-    setCurrentAccountState((prev) => {
-      if (!prev) return newAccounts[0] ?? null;
-      const stillExists = newAccounts.find((a) => a.id === prev.id);
-      return stillExists ?? newAccounts[0] ?? null;
-    });
+  const setAccounts = useCallback((_newAccounts: Account[]) => {
+    // No-op: accounts are driven by AuthContext when authenticated
   }, []);
 
   return (

@@ -1,15 +1,45 @@
 "use client";
-import Checkbox from "@/components/form/input/Checkbox";
+
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
+import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage } from "@/lib/api";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
-  // const [isChecked, setIsChecked] = useState(false); // for "Keep me logged in"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { login } = useAuth();
+  const router = useRouter();
+
+  const loginMutation = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      login(email, password),
+    onSuccess: (data) => {
+      if (data.accounts.length > 0) {
+        router.push(`/company/${data.accounts[0].id}`);
+      } else {
+        router.push("/");
+      }
+    },
+  });
+
+  const error = loginMutation.error
+    ? getErrorMessage(loginMutation.error)
+    : "";
+  const loading = loginMutation.isPending;
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    loginMutation.mutate({ email, password });
+  }
+
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
       <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
@@ -32,13 +62,26 @@ export default function SignInForm() {
             </p>
           </div>
           <div>
-            <form>
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
+                {error && (
+                  <p className="text-sm text-red-500 dark:text-red-400" role="alert">
+                    {error}
+                  </p>
+                )}
                 <div>
                   <Label>
                     Email <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="info@gmail.com" type="email" />
+                  <Input
+                    placeholder="info@gmail.com"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    disabled={loading}
+                  />
                 </div>
                 <div>
                   <Label>
@@ -48,6 +91,11 @@ export default function SignInForm() {
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                      disabled={loading}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -61,25 +109,14 @@ export default function SignInForm() {
                     </span>
                   </div>
                 </div>
-                {/* Keep me logged in + Forgot password (uncomment when needed)
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Checkbox checked={isChecked} onChange={setIsChecked} />
-                    <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
-                      Keep me logged in
-                    </span>
-                  </div>
-                  <Link
-                    href="/reset-password"
-                    className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                */}
                 <div>
-                  <Button className="w-full" size="sm">
-                    Sign in
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    type="submit"
+                    disabled={loading}
+                  >
+                    {loading ? "Signing in…" : "Sign in"}
                   </Button>
                 </div>
               </div>
