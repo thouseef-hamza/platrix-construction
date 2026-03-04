@@ -1,14 +1,8 @@
 """
-Signals for purchase app. When a purchase is posted, create a ledger entry.
+Signals for purchase app.
 
-Cases:
-  - Case 1: Project selected, paid_amount == amount
-    → Debit Project Expense (5010), Credit Cash & Bank (1010)
-  - Case 2: Project selected, paid_amount < amount
-    → Debit Project Expense (5010), Credit Cash & Bank (1010) by paid_amount,
-      Credit Accounts Payable (2010) by balance
-  - Case 3: Project not selected
-    → Same as above but use Materials Expense (5020) instead of Project Expense (5010)
+1. When a purchase is posted, create a ledger entry (expense dr; cash/ap cr).
+2. When a payment is added to a posted purchase, create a payment ledger entry (AP dr, cash cr).
 """
 from decimal import Decimal
 
@@ -18,6 +12,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from apps.accounting.constants import (
+    ENTRY_SOURCE_PAYMENT,
     ENTRY_SOURCE_PURCHASE,
     ENTRY_STATUS_POSTED,
 )
@@ -30,7 +25,7 @@ from .constants import (
     COA_CODE_PROJECT_EXPENSE,
     PURCHASE_STATUS_POSTED,
 )
-from .models import Purchase
+from .models import Purchase, PurchasePayment
 
 
 def _get_coa_by_code(account, code):
@@ -116,3 +111,55 @@ def on_purchase_posted_create_ledger_entry(sender, instance, created, **kwargs):
                 debit=Decimal("0.00"),
                 credit=balance,
             )
+
+
+@receiver(post_save, sender=PurchasePayment)
+def on_purchase_payment_created_create_ledger_entry(sender, instance, created, **kwargs):
+    """When a payment is added to a posted purchase, create LedgerEntry: Debit AP (2010), Credit Cash (1010)."""
+    if not created:
+        return
+    if instance.is_deleted:
+        return
+    purchase = instance.purchase
+    if purchase.status != PURCHASE_STATUS_POSTED:
+        return
+    amount = instance.amount or Decimal("0.00")
+    if amount <= 0:
+        return
+    ref = f"PurchasePayment-{instance.id}"
+    if LedgerEntry.objects.filter(account=purchase.account, reference=ref).exists():
+        return
+    ap_coa = _get_coa_by_code(purchase.account, COA_CODE_ACCOUNTS_PAYABLE)
+    cash_coa = _get_coa_by_code(purchase.account, COA_CODE_CASH_BANK)
+    if not ap_coa or not cash_coa:
+        return
+    desc = instance.reference or f"Payment – {purchase.reference}"
+    with transaction.atomic():
+        entry_number = get_next_entry_number(purchase.account, source=ENTRY_SOURCE_PAYMENT)
+        entry = LedgerEntry.objects.create(
+            account=purchase.account,
+            entry_number=entry_number,
+            entry_date=instance.date,
+            posting_date=instance.date,
+            description=f"Payment – {purchase.reference} – {purchase.supplier.name}",
+            reference=ref,
+            source=ENTRY_SOURCE_PAYMENT,
+            status=ENTRY_STATUS_POSTED,
+            posted_at=timezone.now(),
+        )
+        LedgerLine.objects.create(
+            entry=entry,
+            chart_of_account=ap_coa,
+            line_number=1,
+            description=desc,
+            debit=amount,
+            credit=Decimal("0.00"),
+        )
+        LedgerLine.objects.create(
+            entry=entry,
+            chart_of_account=cash_coa,
+            line_number=2,
+            description=desc,
+            debit=Decimal("0.00"),
+            credit=amount,
+        )

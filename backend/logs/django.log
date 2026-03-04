@@ -1014,3 +1014,9 @@ Unauthorized: /api/companies/
 Unauthorized: /api/projects/
 Unauthorized: /api/purchases/
 Unauthorized: /api/purchases/1/
+Not Found: /favicon.ico
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/signals.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/signals.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /favicon.ico
