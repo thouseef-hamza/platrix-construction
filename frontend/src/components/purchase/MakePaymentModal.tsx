@@ -24,26 +24,36 @@ export default function MakePaymentModal({
   const [amount, setAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
+  const [amountError, setAmountError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setAmount("");
       setPaymentDate(new Date().toISOString().slice(0, 10));
       setFiles(null);
+      setAmountError(null);
+      setDateError(null);
     }
   }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setAmountError(null);
+    setDateError(null);
     const amountNum = parseFloat(amount) || 0;
-    if (amountNum <= 0) return;
+    const missingDate = !paymentDate?.trim();
+    if (missingDate) setDateError("Date is required.");
+    if (amountNum <= 0) setAmountError("Amount must be greater than 0.");
+    else if (amountNum > balance) setAmountError("Payment cannot exceed the balance due.");
+    if (missingDate || amountNum <= 0 || amountNum > balance) return;
     const attachmentNames = files ? Array.from(files).map((f) => ({ name: f.name })) : [];
     onSubmit(amountNum, paymentDate, attachmentNames);
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-md mx-4">
-      <form onSubmit={handleSubmit} className="p-6 sm:p-8">
+      <form onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Make payment
         </h2>
@@ -53,27 +63,41 @@ export default function MakePaymentModal({
         <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Amount (QAR)
+              Amount (QAR) <span className="text-red-600 dark:text-red-400">*</span>
             </label>
             <input
               type="number"
               min={0}
               step="0.01"
-              className={inputClass}
+              className={inputClass + (amountError ? " border-red-500 dark:border-red-400" : "")}
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                if (amountError) setAmountError(null);
+              }}
               placeholder="0"
-              required
             />
+            {amountError && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{amountError}</p>
+            )}
           </div>
           <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Date <span className="text-red-600 dark:text-red-400">*</span>
+            </label>
             <DatePicker
               id="make-payment-date"
-              label="Date"
               placeholder="Select date"
               value={paymentDate}
-              onChange={(_, dateStr) => setPaymentDate(dateStr ?? "")}
+              onChange={(_, dateStr) => {
+                setPaymentDate(dateStr ?? "");
+                if (dateError) setDateError(null);
+              }}
+              error={!!dateError}
             />
+            {dateError && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{dateError}</p>
+            )}
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">

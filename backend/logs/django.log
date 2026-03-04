@@ -1004,3 +1004,13 @@ Watching for file changes with StatReloader
 Watching for file changes with StatReloader
 /home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/models.py changed, reloading.
 Watching for file changes with StatReloader
+Unauthorized: /api/projects/
+Unauthorized: /api/companies/
+Unauthorized: /api/purchases/
+Unauthorized: /api/inventory/materials/
+Bad Request: /api/purchases/2/payments/
+Unauthorized: /api/inventory/materials/
+Unauthorized: /api/companies/
+Unauthorized: /api/projects/
+Unauthorized: /api/purchases/
+Unauthorized: /api/purchases/1/

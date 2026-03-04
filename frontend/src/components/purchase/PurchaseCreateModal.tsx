@@ -78,18 +78,15 @@ export default function PurchaseCreateModal({
     );
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-
-    const newErrors: typeof errors = {};
+  type ValidationErrors = typeof errors;
+  const runValidation = useCallback((): { valid: boolean; newErrors: ValidationErrors } => {
+    const newErrors: ValidationErrors = {};
     if (!supplierId?.trim()) {
       newErrors.supplier = "Supplier is required.";
     }
     if (!date?.trim()) {
       newErrors.date = "Date is required.";
     }
-
     const lineErrors: Record<string, { quantity?: string; rate?: string }> = {};
     let hasValidLine = false;
     lines.forEach((row) => {
@@ -114,8 +111,15 @@ export default function PurchaseCreateModal({
         newErrors.lines[firstRowId] = { quantity: "Add at least one material with quantity and rate greater than 0." };
       }
     }
+    const valid = Object.keys(newErrors).length === 0;
+    return { valid, newErrors };
+  }, [supplierId, date, lines]);
 
-    if (Object.keys(newErrors).length > 0) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    const { valid, newErrors } = runValidation();
+    if (!valid) {
       setErrors(newErrors);
       return;
     }
@@ -200,7 +204,7 @@ export default function PurchaseCreateModal({
   return (
     <>
     <Modal isOpen={isOpen} onClose={handleClose} className="max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
-      <form ref={formRef} onSubmit={handleSubmit} className="p-6 sm:p-8">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
           Add Purchase
         </h2>
@@ -222,7 +226,9 @@ export default function PurchaseCreateModal({
               </select>
             </div>
             <div>
-              <Label>Supplier</Label>
+              <Label>
+                Supplier <span className="text-red-600 dark:text-red-400">*</span>
+              </Label>
               <select
                 className={selectClass + (errors.supplier ? " border-red-500 dark:border-red-400" : "")}
                 value={supplierId}
@@ -230,7 +236,6 @@ export default function PurchaseCreateModal({
                   setSupplierId(e.target.value);
                   if (errors.supplier) setErrors((prev) => ({ ...prev, supplier: undefined }));
                 }}
-                required
               >
                 <option value="">Select supplier</option>
                 {suppliers.map((s) => (
@@ -256,15 +261,18 @@ export default function PurchaseCreateModal({
               />
             </div>
             <div>
+              <Label>
+                Date <span className="text-red-600 dark:text-red-400">*</span>
+              </Label>
               <DatePicker
                 id="purchase-date"
-                label="Date"
                 placeholder="Select date"
                 value={date}
                 onChange={(_, dateStr) => {
                   setDate(dateStr ?? "");
                   if (errors.date) setErrors((prev) => ({ ...prev, date: undefined }));
                 }}
+                error={!!errors.date}
               />
               {errors.date && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.date}</p>
@@ -274,7 +282,9 @@ export default function PurchaseCreateModal({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label>Materials</Label>
+              <Label>
+                Materials <span className="text-red-600 dark:text-red-400">*</span>
+              </Label>
               <button
                 type="button"
                 onClick={addLine}
@@ -283,13 +293,13 @@ export default function PurchaseCreateModal({
                 + Add line
               </button>
             </div>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className={`rounded-xl border overflow-hidden ${Object.keys(errors.lines ?? {}).length > 0 ? "border-red-500 dark:border-red-400" : "border-gray-200 dark:border-gray-700"}`}>
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-white/[0.04]">
                     <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Material</th>
-                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400 w-24">Qty</th>
-                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400 w-28">Rate (QAR)</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400 w-24">Qty <span className="text-red-600 dark:text-red-400">*</span></th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400 w-28">Rate (QAR) <span className="text-red-600 dark:text-red-400">*</span></th>
                     <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400 w-28">Amount</th>
                     <th className="w-10" />
                   </tr>
@@ -472,7 +482,15 @@ export default function PurchaseCreateModal({
           </button>
           <button
             type="button"
-            onClick={() => setShowPostConfirm(true)}
+            onClick={() => {
+              setErrors({});
+              const { valid, newErrors } = runValidation();
+              if (!valid) {
+                setErrors(newErrors);
+                return;
+              }
+              setShowPostConfirm(true);
+            }}
             disabled={isSubmitting}
             className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-60"
           >

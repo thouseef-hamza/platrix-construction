@@ -32,9 +32,9 @@ export default function PurchaseViewModal({
   const attachments = purchase.attachments ?? [];
   const isDraft = purchase.status === "draft";
   const paymentStatus = purchase.paymentStatus ?? (purchase.paidAmount === undefined || purchase.paidAmount === 0 ? "not_completed" : purchase.paidAmount >= purchase.amount ? "completed" : "partial");
-  const showMakePayment = paymentStatus === "partial" || paymentStatus === "not_completed";
   const currentPaid = purchase.paidAmount ?? 0;
   const balance = purchase.amount - currentPaid;
+  const showMakePayment = balance > 0;
 
   const handleUpload = (newFiles: { name: string }[]) => {
     onUpdate?.(purchase.id, {
@@ -244,7 +244,7 @@ export default function PurchaseViewModal({
             <div>
               <div className="flex items-center justify-between gap-4 mb-4">
                 <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Payments</span>
-                {showMakePayment && onUpdate && (
+                {showMakePayment && onUpdate && purchase.status === "posted" && (
                   <button
                     type="button"
                     onClick={() => setMakePaymentModalOpen(true)}
