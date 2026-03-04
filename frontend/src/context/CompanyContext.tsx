@@ -4,7 +4,7 @@ import React, { createContext, useContext, useMemo } from "react";
 
 type CompanyContextType = {
   companyId: string | null;
-  /** Base path for the current company, e.g. /company/123. Null when not in a company route (e.g. auth). */
+  /** Base path for the current account, e.g. /accounts/123. Null when not in an account route (e.g. auth). */
   basePath: string | null;
   /** Build a company-scoped path. segment should be "" for dashboard, or "/projects", "/employee", etc. */
   path: (segment: string) => string;
@@ -20,7 +20,7 @@ export function CompanyProvider({
   children: React.ReactNode;
 }) {
   const value = useMemo<CompanyContextType>(() => {
-    const base = `/company/${companyId}`;
+    const base = `/accounts/${companyId}`;
     return {
       companyId,
       basePath: base,
@@ -49,7 +49,7 @@ export function useCompany(): CompanyContextType {
 export function useCompanyStrict(): CompanyContextType {
   const context = useContext(CompanyContext);
   if (context === undefined || context.companyId === null) {
-    throw new Error("useCompanyStrict must be used within a CompanyProvider with a company route");
+    throw new Error("useCompanyStrict must be used within a CompanyProvider with an account route");
   }
   return context;
 }

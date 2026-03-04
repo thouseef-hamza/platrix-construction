@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -13,11 +14,17 @@ import {
 } from "@/components/ui/table";
 import type { Company } from "@/types/company";
 import type { CompanyType } from "@/types/company";
-import { getInitialCompanies } from "@/data/mockCompanies";
+import { useCompany } from "@/context/CompanyContext";
+import {
+  fetchCompanies,
+  createCompany,
+  companyTypeToBackend,
+} from "@/lib/companiesApi";
 import CompanyViewModal from "./CompanyViewModal";
 import CompanyCreateModal from "./CompanyCreateModal";
 
 const PAGE_SIZE = 5;
+const COMPANIES_QUERY_KEY = "companies";
 
 interface CompaniesListProps {
   title: string;
@@ -25,7 +32,27 @@ interface CompaniesListProps {
 }
 
 export default function CompaniesList({ title, type }: CompaniesListProps) {
-  const [items, setItems] = useState<Company[]>(() => getInitialCompanies(type));
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
+  const companyTypeInt = companyTypeToBackend(type);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: [COMPANIES_QUERY_KEY, companyId, companyTypeInt],
+    queryFn: () => fetchCompanies(companyTypeInt),
+    enabled: !!companyId,
+  });
+  const createMutation = useMutation({
+    mutationFn: (payload: { name: string }) =>
+      createCompany({
+        name: payload.name,
+        company_type: companyTypeInt,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [COMPANIES_QUERY_KEY, companyId, companyTypeInt],
+      });
+    },
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -55,14 +82,18 @@ export default function CompaniesList({ title, type }: CompaniesListProps) {
   }, [totalPages, currentPage]);
 
   const handleCreate = (data: Omit<Company, "id">) => {
-    const id = `${type}-${Date.now()}`;
-    setItems((prev) => [{ ...data, id }, ...prev]);
+    createMutation.mutate(
+      { name: data.name },
+      { onSuccess: () => setIsCreateModalOpen(false) }
+    );
   };
 
   const handleRowClick = (company: Company) => {
     setSelectedCompany(company);
     setIsViewModalOpen(true);
   };
+
+  if (!companyId) return null;
 
   return (
     <div>
@@ -91,6 +122,11 @@ export default function CompaniesList({ title, type }: CompaniesListProps) {
       </div>
       <div className="space-y-6">
         <ComponentCard>
+          {isLoading && (
+            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Loading companies…
+            </p>
+          )}
           <div className="mb-6 space-y-4">
             <div className="max-w-xs">
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -191,6 +227,7 @@ export default function CompaniesList({ title, type }: CompaniesListProps) {
         onClose={() => setIsCreateModalOpen(false)}
         title={title}
         onCreate={handleCreate}
+        isSubmitting={createMutation.isPending}
       />
     </div>
   );

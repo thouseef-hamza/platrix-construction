@@ -16,15 +16,23 @@ from .serializers import (
 
 
 def user_account_ids(request):
-    """Return set of account IDs (str) the current user is linked to."""
+    """Return set of account IDs (int) the current user is linked to."""
     if not request.user or not request.user.is_authenticated:
         return set()
-    return {
-        str(pk)
-        for pk in AccountUser.objects.filter(
+    return set(
+        AccountUser.objects.filter(
             user=request.user, is_deleted=False
         ).values_list("account_id", flat=True)
-    }
+    )
+
+
+def _current_account_id(request):
+    """Account from a-account-id header; must be in user_account_ids. Returns None if missing/invalid."""
+    account_id = getattr(request, "current_account_id", None)
+    if account_id is None:
+        return None
+    account_ids = user_account_ids(request)
+    return account_id if account_id in account_ids else None
 
 
 def get_chart_of_account_queryset(request):
@@ -32,10 +40,8 @@ def get_chart_of_account_queryset(request):
     qs = ChartOfAccount.objects.filter(account_id__in=account_ids).select_related(
         "account", "parent"
     )
-    account_id = request.query_params.get("account_id")
-    if account_id:
-        if account_id not in account_ids:
-            return ChartOfAccount.objects.none()
+    account_id = _current_account_id(request)
+    if account_id is not None:
         qs = qs.filter(account_id=account_id)
     return qs.order_by("code")
 
@@ -45,33 +51,40 @@ def get_journal_entry_queryset(request):
     qs = LedgerEntry.objects.filter(account_id__in=account_ids).select_related(
         "account", "created_by", "posted_by"
     ).prefetch_related("lines__chart_of_account")
-    account_id = request.query_params.get("account_id")
-    if account_id:
-        if account_id not in account_ids:
-            return LedgerEntry.objects.none()
+    account_id = _current_account_id(request)
+    if account_id is not None:
         qs = qs.filter(account_id=account_id)
     return qs.order_by("-posting_date", "-created_at")
 
 
 class ChartOfAccountListCreateView(APIView):
-    """GET list, POST create chart of accounts. Use ?account_id=<uuid> to filter/create."""
+    """GET list, POST create chart of accounts. Requires a-account-id header for scoping."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if _current_account_id(request) is None:
+            return Response(
+                {"detail": "a-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         qs = get_chart_of_account_queryset(request)
         serializer = ChartOfAccountListSerializer(qs, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = ChartOfAccountWriteSerializer(data=request.data)
+        account_id = _current_account_id(request)
+        if account_id is None:
+            return Response(
+                {"detail": "a-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        account = get_object_or_404(Account, pk=account_id)
+        serializer = ChartOfAccountWriteSerializer(
+            data={**request.data, "account": account_id}
+        )
         serializer.is_valid(raise_exception=True)
-        account = serializer.validated_data.get("account")
-        account_id = str(account.pk) if account else request.query_params.get("account_id")
-        if account_id and account_id not in user_account_ids(request):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("You do not have access to this account.")
-        serializer.save()
+        serializer.save(account=account)
         return Response(
             ChartOfAccountListSerializer(serializer.instance).data,
             status=status.HTTP_201_CREATED,
@@ -96,7 +109,7 @@ class ChartOfAccountDetailView(APIView):
         obj = self.get_object(pk)
         serializer = ChartOfAccountWriteSerializer(obj, data=request.data, partial=False)
         serializer.is_valid(raise_exception=True)
-        if str(serializer.instance.account_id) not in user_account_ids(request):
+        if serializer.instance.account_id not in user_account_ids(request):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have access to this account.")
         serializer.save()
@@ -106,7 +119,7 @@ class ChartOfAccountDetailView(APIView):
         obj = self.get_object(pk)
         serializer = ChartOfAccountWriteSerializer(obj, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        if str(serializer.instance.account_id) not in user_account_ids(request):
+        if serializer.instance.account_id not in user_account_ids(request):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have access to this account.")
         serializer.save()
@@ -114,7 +127,7 @@ class ChartOfAccountDetailView(APIView):
 
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        if str(obj.account_id) not in user_account_ids(request):
+        if obj.account_id not in user_account_ids(request):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have access to this account.")
         obj.delete()
@@ -122,25 +135,33 @@ class ChartOfAccountDetailView(APIView):
 
 
 class JournalEntryListCreateView(APIView):
-    """GET list, POST create journal entries. Use ?account_id=<uuid>. POST can omit entry_number."""
+    """GET list, POST create journal entries. Requires a-account-id header. POST can omit entry_number."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if _current_account_id(request) is None:
+            return Response(
+                {"detail": "a-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         qs = get_journal_entry_queryset(request)
         serializer = LedgerEntrySerializer(qs, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = LedgerEntryWriteSerializer(data=request.data)
+        account_id = _current_account_id(request)
+        if account_id is None:
+            return Response(
+                {"detail": "a-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        account = get_object_or_404(Account, pk=account_id)
+        data = {**request.data, "account": account_id}
+        serializer = LedgerEntryWriteSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        account = serializer.validated_data.get("account")
-        account_id = str(account.pk) if account else request.query_params.get("account_id")
-        if account_id and account_id not in user_account_ids(request):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("You do not have access to this account.")
         entry_number = serializer.validated_data.get("entry_number")
-        if not entry_number and account:
+        if not entry_number:
             serializer.validated_data["entry_number"] = get_next_entry_number(account)
         if request.user:
             serializer.validated_data["created_by"] = request.user
@@ -169,7 +190,7 @@ class JournalEntryDetailView(APIView):
         obj = self.get_object(pk)
         serializer = LedgerEntryWriteSerializer(obj, data=request.data, partial=False)
         serializer.is_valid(raise_exception=True)
-        if str(serializer.instance.account_id) not in user_account_ids(request):
+        if serializer.instance.account_id not in user_account_ids(request):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have access to this account.")
         serializer.save()
@@ -179,7 +200,7 @@ class JournalEntryDetailView(APIView):
         obj = self.get_object(pk)
         serializer = LedgerEntryWriteSerializer(obj, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        if str(serializer.instance.account_id) not in user_account_ids(request):
+        if serializer.instance.account_id not in user_account_ids(request):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have access to this account.")
         serializer.save()
@@ -187,7 +208,7 @@ class JournalEntryDetailView(APIView):
 
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        if str(obj.account_id) not in user_account_ids(request):
+        if obj.account_id not in user_account_ids(request):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have access to this account.")
         obj.delete()
@@ -195,21 +216,17 @@ class JournalEntryDetailView(APIView):
 
 
 class JournalEntryNextNumberView(APIView):
-    """GET ?account_id=<uuid> → { "entry_number": "JE-2025-00001" }."""
+    """GET with a-account-id header → { "entry_number": "JE-2025-00001" }."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        account_id = request.query_params.get("account_id")
-        if not account_id:
+        account_id = _current_account_id(request)
+        if account_id is None:
             return Response(
-                {"detail": "account_id is required."},
+                {"detail": "a-account-id header is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        account_ids = user_account_ids(request)
-        if account_id not in account_ids:
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("You do not have access to this account.")
         account = get_object_or_404(Account, pk=account_id)
         entry_number = get_next_entry_number(account)
         return Response({"entry_number": entry_number})

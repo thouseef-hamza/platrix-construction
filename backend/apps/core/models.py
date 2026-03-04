@@ -9,11 +9,10 @@ from apps.core.constants import ACTIVITY_LOG_ACTION_FLAG_CHOICES
 
 
 def document_upload_to(instance, filename):
-    """Upload path for documents: documents/<year>/<month>/<uuid>_<filename>."""
+    """Upload path for documents: documents/<year>/<month>/<id>_<filename>."""
     from django.utils import timezone
 
     now = timezone.now()
-    # Use instance.pk if available (after first save), else a new uuid for the path
     prefix = str(instance.pk) if instance.pk else uuid.uuid4().hex[:12]
     return f"documents/{now.year}/{now.month:02d}/{prefix}_{filename}"
 
@@ -37,10 +36,10 @@ class SoftDeleteManager(models.Manager):
 
 class BaseModel(models.Model):
     """
-    Abstract base model with UUID primary key and soft-delete support.
+    Abstract base model with integer (BigAuto) primary key and soft-delete support.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True, auto_created=True)
     is_deleted = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

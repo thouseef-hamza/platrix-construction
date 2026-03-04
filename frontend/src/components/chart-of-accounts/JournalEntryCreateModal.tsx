@@ -5,14 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import DatePicker from "@/components/form/date-picker";
-import type {
-  Account,
-  JournalEntry,
-  JournalEntryLine,
-  JournalEntryStatus,
-} from "@/types/chartOfAccounts";
+import type { Account, JournalEntryStatus } from "@/types/chartOfAccounts";
 import { formatCurrency } from "@/utils/format";
-import { fetchJournalEntryNextNumber } from "@/lib/accountingApi";
+import {
+  fetchJournalEntryNextNumber,
+  type CreateJournalEntryPayload,
+} from "@/lib/accountingApi";
 
 const inputClass =
   "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
@@ -31,9 +29,8 @@ interface JournalEntryCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   accounts: Account[];
-  onCreate: (data: Omit<JournalEntry, "id">) => void;
+  onCreate: (data: CreateJournalEntryPayload) => void;
   isSubmitting?: boolean;
-  accountId?: string;
 }
 
 export default function JournalEntryCreateModal({
@@ -42,12 +39,11 @@ export default function JournalEntryCreateModal({
   accounts,
   onCreate,
   isSubmitting = false,
-  accountId,
 }: JournalEntryCreateModalProps) {
   const { data: nextNumber } = useQuery({
-    queryKey: ["journal-entry-next-number", accountId],
-    queryFn: () => fetchJournalEntryNextNumber(accountId!),
-    enabled: !!accountId && isOpen,
+    queryKey: ["journal-entry-next-number"],
+    queryFn: () => fetchJournalEntryNextNumber(),
+    enabled: isOpen,
   });
   useEffect(() => {
     if (isOpen && nextNumber) setNumber(nextNumber);
@@ -124,15 +120,12 @@ export default function JournalEntryCreateModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
-    const lineItems: JournalEntryLine[] = lines
+    const lineItems = lines
       .filter((r) => r.accountId && (parseFloat(r.debit) > 0 || parseFloat(r.credit) > 0))
       .map((r) => {
-        const acc = accounts.find((a) => a.id === r.accountId)!;
+        const acc = accounts.find((a) => String(a.id) === r.accountId)!;
         return {
-          id: r.id,
           accountId: acc.id,
-          accountCode: acc.code,
-          accountName: acc.name,
           debit: parseFloat(r.debit) || 0,
           credit: parseFloat(r.credit) || 0,
           description: r.description.trim() || undefined,

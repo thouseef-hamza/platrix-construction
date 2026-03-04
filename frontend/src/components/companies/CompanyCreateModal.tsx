@@ -13,6 +13,7 @@ interface CompanyCreateModalProps {
   onClose: () => void;
   title: string;
   onCreate: (data: Omit<Company, "id">) => void;
+  isSubmitting?: boolean;
 }
 
 export default function CompanyCreateModal({
@@ -20,6 +21,7 @@ export default function CompanyCreateModal({
   onClose,
   title,
   onCreate,
+  isSubmitting = false,
 }: CompanyCreateModalProps) {
   const [name, setName] = useState("");
 
@@ -66,9 +68,10 @@ export default function CompanyCreateModal({
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+            disabled={isSubmitting}
+            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
           >
-            Create
+            {isSubmitting ? "Creating…" : "Create"}
           </button>
         </div>
       </form>

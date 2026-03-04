@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAccount } from "@/context/AccountContext";
 import { ChevronDownIcon } from "@/icons/index";
 
 export default function AccountSwitcher() {
+  const router = useRouter();
   const { currentAccount, accounts, switchAccount } = useAccount();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -78,6 +80,7 @@ export default function AccountSwitcher() {
               onClick={() => {
                 switchAccount(account.id);
                 setIsOpen(false);
+                router.push(`/accounts/${account.id}`);
               }}
               className={`flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors ${
                 currentAccount?.id === account.id

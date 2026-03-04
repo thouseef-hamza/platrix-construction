@@ -18,7 +18,7 @@ interface AccountViewModalProps {
   accounts: Account[];
   isOpen: boolean;
   onClose: () => void;
-  onUpdate?: (id: string, updates: Partial<Account>) => void;
+  onUpdate?: (id: number, updates: Partial<Account>) => void;
 }
 
 export default function AccountViewModal({

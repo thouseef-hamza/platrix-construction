@@ -63,8 +63,8 @@ export default function PurchaseCreateModal({
       ? expenseOrAssetAccounts(accounts).filter((a) => a.type === "expense")
       : assetAccountsForPurchase(accounts);
   useEffect(() => {
-    if (isOpen && typeAccounts.length > 0 && !typeAccounts.some((a) => a.id === accountId)) {
-      setAccountId(typeAccounts[0]!.id);
+    if (isOpen && typeAccounts.length > 0 && !typeAccounts.some((a) => String(a.id) === accountId)) {
+      setAccountId(String(typeAccounts[0]!.id));
     }
   }, [isOpen, typeAccounts, accountId]);
   const [reference, setReference] = useState("");
@@ -99,7 +99,7 @@ export default function PurchaseCreateModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const account = typeAccounts.find((a) => a.id === accountId);
+    const account = typeAccounts.find((a) => String(a.id) === accountId);
     if (!account) return;
     const supplier = suppliers.find((s) => s.id === supplierId);
     if (!supplier) return;

@@ -6,11 +6,11 @@ export type AccountType =
   | "expense";
 
 export interface Account {
-  id: string;
+  id: number;
   code: string;
   name: string;
   type: AccountType;
-  parentId: string | null;
+  parentId: number | null;
   openingBalance: number; // positive = debit balance for asset/expense, credit for liability/equity/revenue
   isActive: boolean;
 }
@@ -18,8 +18,8 @@ export interface Account {
 export type JournalEntryStatus = "draft" | "posted";
 
 export interface JournalEntryLine {
-  id: string;
-  accountId: string;
+  id: number;
+  accountId: number;
   accountCode: string;
   accountName: string;
   debit: number;
@@ -28,7 +28,7 @@ export interface JournalEntryLine {
 }
 
 export interface JournalEntry {
-  id: string;
+  id: number;
   number: string;
   date: string;
   description: string;

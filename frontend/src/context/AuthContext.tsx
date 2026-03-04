@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { login as apiLogin, type LoginResponse, setAuthToken } from "@/lib/api";
+import { login as apiLogin, type LoginResponse, setAuthToken, setCurrentAccountId } from "@/lib/api";
 
 export type AuthUser = LoginResponse["user"];
 export type AuthAccount = LoginResponse["accounts"][number];
@@ -93,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setAccounts([]);
     setAuthToken(null);
+    setCurrentAccountId(null);
     saveStored(null);
   }, []);
 

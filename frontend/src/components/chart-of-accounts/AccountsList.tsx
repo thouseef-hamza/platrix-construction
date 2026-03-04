@@ -39,12 +39,12 @@ export default function AccountsList() {
   const queryClient = useQueryClient();
   const { data: items = [], isLoading } = useQuery({
     queryKey: [ACCOUNTS_QUERY_KEY, companyId],
-    queryFn: () => fetchChartOfAccounts(companyId!),
+    queryFn: () => fetchChartOfAccounts(),
     enabled: !!companyId,
   });
   const createMutation = useMutation({
     mutationFn: (payload: Omit<Account, "id">) =>
-      createChartOfAccount(companyId!, {
+      createChartOfAccount({
         code: payload.code,
         name: payload.name,
         type: payload.type,
@@ -94,7 +94,7 @@ export default function AccountsList() {
     if (totalPages > 0 && currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
-  const handleUpdate = (_id: string, _updates: Partial<Account>) => {
+  const handleUpdate = (_id: number, _updates: Partial<Account>) => {
     queryClient.invalidateQueries({ queryKey: [ACCOUNTS_QUERY_KEY, companyId] });
     setSelected(null);
     setViewOpen(false);

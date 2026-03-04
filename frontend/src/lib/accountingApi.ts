@@ -35,13 +35,13 @@ const STATUS_TO_BACKEND: Record<JournalEntryStatus, number> = {
 
 // --- Backend response types ---
 export interface ApiChartOfAccount {
-  id: string;
-  account: string;
+  id: number;
+  account: number;
   code: string;
   name: string;
   account_type: number;
   account_type_display?: string;
-  parent: string | null;
+  parent: number | null;
   description: string;
   is_active: boolean;
   is_system: boolean;
@@ -50,9 +50,9 @@ export interface ApiChartOfAccount {
 }
 
 export interface ApiLedgerLine {
-  id: string;
-  entry: string;
-  chart_of_account: string;
+  id: number;
+  entry: number;
+  chart_of_account: number;
   chart_of_account_code: string;
   chart_of_account_name: string;
   line_number: number;
@@ -63,8 +63,8 @@ export interface ApiLedgerLine {
 }
 
 export interface ApiLedgerEntry {
-  id: string;
-  account: string;
+  id: number;
+  account: number;
   entry_number: string;
   entry_date: string;
   posting_date: string;
@@ -75,8 +75,8 @@ export interface ApiLedgerEntry {
   status: number;
   status_display?: string;
   posted_at: string | null;
-  posted_by: string | null;
-  created_by: string | null;
+  posted_by: number | null;
+  created_by: number | null;
   lines: ApiLedgerLine[];
   created_at: string;
   updated_at: string;
@@ -118,79 +118,58 @@ function apiEntryToJournalEntry(apiEntry: ApiLedgerEntry): JournalEntry {
 }
 
 // --- Chart of accounts ---
-export async function fetchChartOfAccounts(
-  accountId: string
-): Promise<Account[]> {
+export async function fetchChartOfAccounts(): Promise<Account[]> {
   const { data } = await api.get<ApiChartOfAccount[]>(
-    "/accounting/chart-of-accounts/",
-    { params: { account_id: accountId } }
+    "/accounting/chart-of-accounts/"
   );
   return (data ?? []).map(apiCoaToAccount);
 }
 
-export async function createChartOfAccount(
-  accountId: string,
-  payload: {
-    code: string;
-    name: string;
-    type: AccountType;
-    parentId: string | null;
-    isActive: boolean;
-  }
-): Promise<Account> {
+export async function createChartOfAccount(payload: {
+  code: string;
+  name: string;
+  type: AccountType;
+  parentId: number | null;
+  isActive: boolean;
+}): Promise<Account> {
   const { data } = await api.post<ApiChartOfAccount>(
     "/accounting/chart-of-accounts/",
     {
-      account: accountId,
       code: payload.code,
       name: payload.name,
       account_type: ACCOUNT_TYPE_TO_BACKEND[payload.type],
-      parent: payload.parentId || null,
+      parent: payload.parentId ?? null,
       is_active: payload.isActive,
     }
   );
   return apiCoaToAccount(data);
 }
 
-export async function getChartOfAccount(
-  accountId: string,
-  id: string
-): Promise<Account | null> {
+export async function getChartOfAccount(id: number): Promise<Account | null> {
   const { data } = await api.get<ApiChartOfAccount>(
-    `/accounting/chart-of-accounts/${id}/`,
-    { params: { account_id: accountId } }
+    `/accounting/chart-of-accounts/${id}/`
   );
   return data ? apiCoaToAccount(data) : null;
 }
 
 // --- Journal entries ---
-export async function fetchJournalEntries(
-  accountId: string
-): Promise<JournalEntry[]> {
+export async function fetchJournalEntries(): Promise<JournalEntry[]> {
   const { data } = await api.get<ApiLedgerEntry[]>(
-    "/accounting/journal-entries/",
-    { params: { account_id: accountId } }
+    "/accounting/journal-entries/"
   );
   return (data ?? []).map(apiEntryToJournalEntry);
 }
 
-export async function getJournalEntry(
-  accountId: string,
-  id: string
-): Promise<JournalEntry | null> {
+export async function getJournalEntry(id: number): Promise<JournalEntry | null> {
   const { data } = await api.get<ApiLedgerEntry>(
-    `/accounting/journal-entries/${id}/`,
-    { params: { account_id: accountId } }
+    `/accounting/journal-entries/${id}/`
   );
   return data ? apiEntryToJournalEntry(data) : null;
 }
 
-export async function fetchJournalEntryNextNumber(
-  accountId: string
-): Promise<string> {
+export async function fetchJournalEntryNextNumber(): Promise<string> {
   const { data } = await api.get<{ entry_number: string }>(
-    "/accounting/journal-entries/next-number/",
-    { params: { account_id: accountId } }
+    "/accounting/journal-entries/next-number/"
   );
   return data.entry_number;
 }
@@ -201,7 +180,7 @@ export interface CreateJournalEntryPayload {
   description: string;
   status: JournalEntryStatus;
   lines: Array<{
-    accountId: string;
+    accountId: number;
     debit: number;
     credit: number;
     description?: string;
@@ -209,15 +188,13 @@ export interface CreateJournalEntryPayload {
 }
 
 export async function createJournalEntry(
-  accountId: string,
   payload: CreateJournalEntryPayload
 ): Promise<JournalEntry> {
   const dateStr = payload.date.slice(0, 10);
   const { data } = await api.post<ApiLedgerEntry>(
     "/accounting/journal-entries/",
     {
-      account: accountId,
-      entry_number: payload.number || undefined,
+      entry_number: payload.number ?? undefined,
       entry_date: dateStr,
       posting_date: dateStr,
       description: payload.description || "—",

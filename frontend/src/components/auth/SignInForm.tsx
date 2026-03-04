@@ -23,7 +23,7 @@ export default function SignInForm() {
       login(email, password),
     onSuccess: (data) => {
       if (data.accounts.length > 0) {
-        router.push(`/company/${data.accounts[0].id}`);
+        router.push(`/accounts/${data.accounts[0].id}`);
       } else {
         router.push("/");
       }

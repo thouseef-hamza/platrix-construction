@@ -14,7 +14,7 @@ export default function RootPage() {
       router.replace("/signin");
       return;
     }
-    router.replace(`/company/${accounts[0].id}`);
+    router.replace(`/accounts/${accounts[0].id}`);
   }, [authReady, isAuthenticated, accounts, router]);
 
   return null;

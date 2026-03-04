@@ -19,6 +19,7 @@ import {
   fetchJournalEntries,
   createJournalEntry,
   fetchChartOfAccounts,
+  type CreateJournalEntryPayload,
 } from "@/lib/accountingApi";
 import JournalEntryViewModal from "./JournalEntryViewModal";
 import JournalEntryCreateModal from "./JournalEntryCreateModal";
@@ -32,28 +33,17 @@ export default function JournalEntriesList() {
   const queryClient = useQueryClient();
   const { data: items = [], isLoading } = useQuery({
     queryKey: [JOURNAL_ENTRIES_QUERY_KEY, companyId],
-    queryFn: () => fetchJournalEntries(companyId!),
+    queryFn: () => fetchJournalEntries(),
     enabled: !!companyId,
   });
   const { data: accounts = [] } = useQuery({
     queryKey: [ACCOUNTS_QUERY_KEY, companyId],
-    queryFn: () => fetchChartOfAccounts(companyId!),
+    queryFn: () => fetchChartOfAccounts(),
     enabled: !!companyId,
   });
   const createMutation = useMutation({
-    mutationFn: (payload: Omit<JournalEntry, "id">) =>
-      createJournalEntry(companyId!, {
-        number: payload.number,
-        date: payload.date,
-        description: payload.description,
-        status: payload.status,
-        lines: payload.lines.map((l) => ({
-          accountId: l.accountId,
-          debit: l.debit,
-          credit: l.credit,
-          description: l.description,
-        })),
-      }),
+    mutationFn: (payload: CreateJournalEntryPayload) =>
+      createJournalEntry(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [JOURNAL_ENTRIES_QUERY_KEY, companyId],
@@ -307,7 +297,6 @@ export default function JournalEntriesList() {
           });
         }}
         isSubmitting={createMutation.isPending}
-        accountId={companyId ?? undefined}
       />
     </div>
   );

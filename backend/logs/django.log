@@ -27,3 +27,865 @@ Watching for file changes with StatReloader
 Watching for file changes with StatReloader
 /home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/urls.py changed, reloading.
 Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/core/urls.py changed, reloading.
+Watching for file changes with StatReloader
+Unauthorized: /api/accounting/chart-of-accounts/
+Unauthorized: /api/accounting/chart-of-accounts/
+Unauthorized: /api/accounting/journal-entries/
+Unauthorized: /api/accounting/chart-of-accounts/
+Unauthorized: /api/accounting/journal-entries/
+Unauthorized: /api/accounting/chart-of-accounts/
+Not Found: /favicon.ico
+Unauthorized: /api/accounting/chart-of-accounts/
+Unauthorized: /api/accounting/chart-of-accounts/
+Unauthorized: /api/accounting/chart-of-accounts/
+Unauthorized: /api/accounting/chart-of-accounts/
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 50, in get
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 50, in get
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 50, in get
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 50, in get
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: INSERT INTO "companies_company" ("id", "is_deleted", "create...
+                    ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 60, in post
+    serializer.save()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 991, in create
+    instance = ModelClass._default_manager.create(**validated_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 669, in create
+    obj.save(force_insert=True, using=self.db)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 874, in save
+    self.save_base(
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 1918, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1925, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: INSERT INTO "companies_company" ("id", "is_deleted", "create...
+                    ^
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 50, in get
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 50, in get
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 50, in get
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+Not Found: /favicon.ico
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 50, in get
+    return Response(serializer.data)
+                    ^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 797, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 715, in to_representation
+    return [
+           ^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: ..."support_email", "accounts_account"."status" FROM "companies...
+                                                             ^
+Internal Server Error: /api/companies/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "companies_company" does not exist
+LINE 1: INSERT INTO "companies_company" ("id", "is_deleted", "create...
+                    ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py", line 60, in post
+    serializer.save()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 991, in create
+    instance = ModelClass._default_manager.create(**validated_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 669, in create
+    obj.save(force_insert=True, using=self.db)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 874, in save
+    self.save_base(
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 1918, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1925, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: relation "companies_company" does not exist
+LINE 1: INSERT INTO "companies_company" ("id", "is_deleted", "create...
+                    ^
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/core/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/core/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/config/settings/base.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/config/settings/base.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /favicon.ico
+Not Found: /favicon.ico

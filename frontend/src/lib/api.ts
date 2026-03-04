@@ -6,10 +6,16 @@ export const API_BASE_URL =
     : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 let authToken: string | null = null;
+let currentAccountId: number | null = null;
 
 /** Set the JWT for the axios instance. Call from AuthContext on login/logout. */
 export function setAuthToken(token: string | null) {
   authToken = token;
+}
+
+/** Set current account id for a-account-id header. Call from AccountContext when current account changes. */
+export function setCurrentAccountId(id: number | null) {
+  currentAccountId = id;
 }
 
 export const api = axios.create({
@@ -21,6 +27,9 @@ api.interceptors.request.use((config) => {
   if (authToken) {
     config.headers.Authorization = `Bearer ${authToken}`;
   }
+  if (currentAccountId != null) {
+    config.headers["a-account-id"] = String(currentAccountId);
+  }
   return config;
 });
 
@@ -28,7 +37,7 @@ export type LoginResponse = {
   token: string;
   refresh: string;
   user: {
-    id: string;
+    id: number;
     email: string;
     name: string;
     is_active: boolean;
@@ -37,7 +46,7 @@ export type LoginResponse = {
     created_at: string;
   };
   accounts: Array<{
-    id: string;
+    id: number;
     name: string;
     status: number;
     role: number;
