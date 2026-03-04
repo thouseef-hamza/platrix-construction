@@ -1,0 +1,36 @@
+"""Constants for purchase app."""
+
+# Purchase status
+PURCHASE_STATUS_DRAFT = 0
+PURCHASE_STATUS_POSTED = 1
+
+PURCHASE_STATUS_CHOICES = [
+    (PURCHASE_STATUS_DRAFT, "Draft"),
+    (PURCHASE_STATUS_POSTED, "Posted"),
+]
+
+# Payment method
+PAYMENT_METHOD_CASH = 0
+PAYMENT_METHOD_BANK = 1
+
+PAYMENT_METHOD_CHOICES = [
+    (PAYMENT_METHOD_CASH, "Cash"),
+    (PAYMENT_METHOD_BANK, "Bank"),
+]
+
+# Payment status (for purchase header)
+PAYMENT_STATUS_NOT_COMPLETED = 0
+PAYMENT_STATUS_COMPLETED = 1
+PAYMENT_STATUS_PARTIAL = 2
+
+PAYMENT_STATUS_CHOICES = [
+    (PAYMENT_STATUS_NOT_COMPLETED, "Not completed"),
+    (PAYMENT_STATUS_COMPLETED, "Completed"),
+    (PAYMENT_STATUS_PARTIAL, "Partial"),
+]
+
+# Chart of account codes used when posting a purchase to the ledger
+COA_CODE_CASH_BANK = "1010"
+COA_CODE_ACCOUNTS_PAYABLE = "2010"
+COA_CODE_PROJECT_EXPENSE = "5010"
+COA_CODE_MATERIALS_EXPENSE = "5020"

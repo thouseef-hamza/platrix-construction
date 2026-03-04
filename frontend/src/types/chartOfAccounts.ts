@@ -11,7 +11,8 @@ export interface Account {
   name: string;
   type: AccountType;
   parentId: number | null;
-  openingBalance: number; // positive = debit balance for asset/expense, credit for liability/equity/revenue
+  /** Balance from ledger: sum(debit - credit) for posted entries. Positive = debit balance, negative = credit balance. */
+  balance: number;
   isActive: boolean;
 }
 

@@ -38,10 +38,10 @@ export interface PurchaseLineItem {
 
 export interface Purchase {
   id: string;
-  /** Whether this purchase is expensed (P&L) or capitalized as asset. */
-  purchaseType: PurchaseType;
-  /** Ledger account to debit (expense or asset account). */
-  account: AccountRef;
+  /** Whether this purchase is expensed (P&L) or capitalized as asset (optional, removed from form). */
+  purchaseType?: PurchaseType;
+  /** Ledger account to debit (optional, removed from form). */
+  account?: AccountRef;
   project?: ProjectRef | null;
   supplier: SupplierRef;
   reference: string;

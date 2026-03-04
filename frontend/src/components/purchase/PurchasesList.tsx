@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -14,33 +14,100 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/utils/format";
 import type { Purchase, PurchasePaymentStatus } from "@/types/purchase";
-import { MOCK_PURCHASES } from "@/data/mockPurchases";
-import { MOCK_SUPPLIERS } from "@/data/mockCompanies";
-import { MOCK_PROJECTS } from "@/data/mockProjects";
-import { MOCK_ACCOUNTS } from "@/data/mockAccounts";
 import { useCompany } from "@/context/CompanyContext";
 import { fetchMaterials } from "@/lib/materialsApi";
+import { fetchCompanies } from "@/lib/companiesApi";
+import { fetchProjects } from "@/lib/projectsApi";
+import {
+  fetchPurchases,
+  getPurchase,
+  createPurchase,
+  updatePurchase,
+  addPurchasePayment,
+} from "@/lib/purchasesApi";
 import PurchaseViewModal from "./PurchaseViewModal";
 import PurchaseCreateModal from "./PurchaseCreateModal";
 
 const MATERIALS_QUERY_KEY = "materials";
-
+const PURCHASES_QUERY_KEY = "purchases";
+const COMPANY_TYPE_SUPPLIER = 1;
 const PAGE_SIZE = 5;
 
 export default function PurchasesList() {
   const { companyId } = useCompany();
+  const queryClient = useQueryClient();
   const { data: materials = [] } = useQuery({
     queryKey: [MATERIALS_QUERY_KEY, companyId],
     queryFn: () => fetchMaterials(),
     enabled: !!companyId,
   });
-  const [items, setItems] = useState<Purchase[]>(() => [...MOCK_PURCHASES]);
+  const { data: purchases = [], isLoading } = useQuery({
+    queryKey: [PURCHASES_QUERY_KEY, companyId],
+    queryFn: () => fetchPurchases(),
+    enabled: !!companyId,
+  });
+  const { data: companies = [] } = useQuery({
+    queryKey: ["companies", COMPANY_TYPE_SUPPLIER, companyId],
+    queryFn: () => fetchCompanies(COMPANY_TYPE_SUPPLIER),
+    enabled: !!companyId,
+  });
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects", companyId],
+    queryFn: () => fetchProjects(),
+    enabled: !!companyId,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createPurchase,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updatePurchase>[1] }) =>
+      updatePurchase(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["purchase", String(id)] });
+    },
+  });
+  const addPaymentMutation = useMutation({
+    mutationFn: ({
+      purchaseId,
+      payload,
+    }: {
+      purchaseId: number;
+      payload: Parameters<typeof addPurchasePayment>[1];
+    }) => addPurchasePayment(purchaseId, payload),
+    onSuccess: (_, { purchaseId }) => {
+      queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["purchase", String(purchaseId)] });
+    },
+  });
+
+  const suppliers = useMemo(
+    () => companies.map((c) => ({ id: String(c.id), name: c.name })),
+    [companies]
+  );
+  const projectRefs = useMemo(
+    () => projects.map((p) => ({ id: p.id, name: p.projectName })),
+    [projects]
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selected, setSelected] = useState<Purchase | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
+  const { data: selectedDetail } = useQuery({
+    queryKey: ["purchase", selected?.id],
+    queryFn: () => getPurchase(Number(selected!.id)),
+    enabled: !!selected?.id && viewOpen,
+  });
+  const purchaseForModal = selectedDetail ?? selected;
+
+  const items = purchases;
   const { pageItems, total, totalPages } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const list = q
@@ -66,23 +133,28 @@ export default function PurchasesList() {
   }, [totalPages, currentPage]);
 
   const handleUpdate = (id: string, updates: Partial<Purchase>) => {
-    setItems((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const next = { ...p, ...updates };
-        if (updates.paidAmount !== undefined && updates.paymentStatus === undefined) {
-          (next as Purchase).paymentStatus =
-            next.paidAmount! >= p.amount ? "completed" : next.paidAmount! > 0 ? "partial" : "not_completed";
-        }
-        return next;
-      })
-    );
-    if (selected?.id === id) {
-      const next = { ...selected, ...updates };
-      if (updates.paidAmount !== undefined && updates.paymentStatus === undefined)
-        (next as Purchase).paymentStatus =
-          next.paidAmount! >= selected.amount ? "completed" : next.paidAmount! > 0 ? "partial" : "not_completed";
-      setSelected(next);
+    const purchaseId = Number(id);
+    if (updates.status === "posted") {
+      updateMutation.mutate({ id: purchaseId, payload: { status: "posted" } });
+      return;
+    }
+    if (
+      updates.payments != null &&
+      updates.paidAmount != null &&
+      selected?.id === id &&
+      updates.payments.length > (selected.payments?.length ?? 0)
+    ) {
+      const newPayment = updates.payments[updates.payments.length - 1];
+      if (newPayment)
+        addPaymentMutation.mutate({
+          purchaseId,
+          payload: {
+            date: newPayment.date,
+            amount: newPayment.amount,
+            reference: newPayment.reference,
+          },
+        });
+      return;
     }
   };
 
@@ -194,7 +266,16 @@ export default function PurchasesList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {pageItems.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <td
+                        colSpan={6}
+                        className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                      >
+                        Loading…
+                      </td>
+                    </TableRow>
+                  ) : pageItems.length === 0 ? (
                     <TableRow>
                       <td
                         colSpan={6}
@@ -280,7 +361,7 @@ export default function PurchasesList() {
         </ComponentCard>
       </div>
       <PurchaseViewModal
-        purchase={selected}
+        purchase={purchaseForModal}
         isOpen={viewOpen}
         onClose={() => {
           setViewOpen(false);
@@ -291,12 +372,32 @@ export default function PurchasesList() {
       <PurchaseCreateModal
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}
-        accounts={MOCK_ACCOUNTS}
-        suppliers={MOCK_SUPPLIERS}
-        projects={MOCK_PROJECTS.map((p) => ({ id: p.id, name: p.projectName }))}
+        suppliers={suppliers}
+        projects={projectRefs}
         materials={materials}
+        isSubmitting={createMutation.isPending}
         onCreate={(data) => {
-          setItems((prev) => [{ ...data, id: `pu-${Date.now()}` }, ...prev]);
+          createMutation.mutate(
+            {
+              supplier: Number(data.supplier.id),
+              project: data.project ? Number(data.project.id) : null,
+              reference: data.reference,
+              date: data.date,
+              status: data.status,
+              payment_method: data.paymentMethod,
+              line_items: data.lineItems.map((l) => ({
+                material: Number(l.materialId),
+                quantity: l.quantity,
+                rate: l.rate,
+              })),
+              description: data.description,
+              ...(data.paidAmount != null &&
+                data.paidAmount > 0 && { paid_amount: data.paidAmount }),
+            },
+            {
+              onSuccess: () => setCreateOpen(false),
+            }
+          );
         }}
       />
     </div>

@@ -45,6 +45,7 @@ export interface ApiChartOfAccount {
   description: string;
   is_active: boolean;
   is_system: boolean;
+  balance: string;
   created_at: string;
   updated_at: string;
 }
@@ -89,7 +90,7 @@ function apiCoaToAccount(apiCoa: ApiChartOfAccount): Account {
     name: apiCoa.name,
     type: ACCOUNT_TYPE_MAP[apiCoa.account_type] ?? "expense",
     parentId: apiCoa.parent ?? null,
-    openingBalance: 0,
+    balance: parseFloat(apiCoa.balance) || 0,
     isActive: apiCoa.is_active,
   };
 }

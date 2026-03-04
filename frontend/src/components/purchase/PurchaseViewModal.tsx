@@ -100,24 +100,6 @@ export default function PurchaseViewModal({
 
           {activeTab === "details" && (
           <dl className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Expense or Asset
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white capitalize">
-                  {purchase.purchaseType}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Account
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {purchase.account.code} – {purchase.account.name}
-                </dd>
-              </div>
-            </div>
             <div>
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Project

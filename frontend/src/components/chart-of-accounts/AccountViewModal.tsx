@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Modal } from "@/components/ui/modal";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency, getBalanceColorClass } from "@/utils/format";
 import type { Account, AccountType } from "@/types/chartOfAccounts";
 
 const TYPE_LABELS: Record<AccountType, string> = {
@@ -78,10 +78,15 @@ export default function AccountViewModal({
           )}
           <div>
             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Opening balance (QAR)
+              Balance
             </dt>
-            <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white tabular-nums">
-              {formatCurrency(account.openingBalance)}
+            <dd
+              className={`mt-1 text-sm font-medium tabular-nums ${getBalanceColorClass(
+                account.type,
+                account.balance ?? 0
+              )}`}
+            >
+              {formatCurrency(account.balance)}
             </dd>
           </div>
           <div>

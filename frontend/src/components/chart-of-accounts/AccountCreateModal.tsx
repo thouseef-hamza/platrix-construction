@@ -55,7 +55,7 @@ export default function AccountCreateModal({
       name: name.trim(),
       type,
       parentId: parentId ? Number(parentId) : null,
-      openingBalance: parseFloat(openingBalance) || 0,
+      balance: parseFloat(openingBalance) || 0,
       isActive,
     });
     resetForm();

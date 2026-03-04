@@ -6,11 +6,12 @@ from .models import ChartOfAccount, LedgerEntry, LedgerLine
 
 
 class ChartOfAccountListSerializer(serializers.ModelSerializer):
-    """List/read chart of account."""
+    """List/read chart of account. balance = sum(debit - credit) from posted ledger lines."""
 
     account_type_display = serializers.CharField(
         source="get_account_type_display", read_only=True
     )
+    balance = serializers.SerializerMethodField()
 
     class Meta:
         model = ChartOfAccount
@@ -25,10 +26,18 @@ class ChartOfAccountListSerializer(serializers.ModelSerializer):
             "description",
             "is_active",
             "is_system",
+            "balance",
             "created_at",
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def get_balance(self, obj):
+        # From annotated queryset (list/detail) or 0 for new instances (e.g. create response)
+        bal = getattr(obj, "balance", None)
+        if bal is not None:
+            return bal
+        return Decimal("0.00")
 
 
 class ChartOfAccountWriteSerializer(serializers.ModelSerializer):

@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency, getBalanceColorClass } from "@/utils/format";
 import type { Account, AccountType } from "@/types/chartOfAccounts";
 import { useCompany } from "@/context/CompanyContext";
 import {
@@ -199,7 +199,7 @@ export default function AccountsList() {
                       isHeader
                       className="px-5 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400"
                     >
-                      Opening balance (QAR)
+                      Balance
                     </TableCell>
                     <TableCell
                       isHeader
@@ -247,8 +247,13 @@ export default function AccountsList() {
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
                           {TYPE_LABELS[account.type]}
                         </TableCell>
-                        <TableCell className="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-400 tabular-nums">
-                          {formatCurrency(account.openingBalance)}
+                        <TableCell
+                          className={`px-5 py-4 text-end text-theme-sm tabular-nums font-medium ${getBalanceColorClass(
+                            account.type,
+                            account.balance ?? 0
+                          )}`}
+                        >
+                          {formatCurrency(account.balance)}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-center">
                           <span

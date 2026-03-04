@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Modal } from "@/components/ui/modal";
 import ConfirmPostModal from "./ConfirmPostModal";
 import Label from "@/components/form/Label";
 import DatePicker from "@/components/form/date-picker";
-import type { Purchase, PurchaseLineItem, SupplierRef, ProjectRef, PurchaseType, AccountRef } from "@/types/purchase";
+import type { Purchase, PurchaseLineItem, SupplierRef, ProjectRef } from "@/types/purchase";
 import type { Material } from "@/types/material";
-import type { Account } from "@/types/chartOfAccounts";
 import { formatCurrency } from "@/utils/format";
 
 const inputClass =
@@ -19,10 +18,10 @@ const inputSm = "h-10 rounded-lg border border-gray-300 bg-transparent px-3 py-2
 interface PurchaseCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  accounts: Account[];
   suppliers: SupplierRef[];
   projects: ProjectRef[];
   materials: Material[];
+  isSubmitting?: boolean;
   onCreate: (data: Omit<Purchase, "id">) => void;
 }
 
@@ -33,40 +32,17 @@ interface LineRow {
   rate: string;
 }
 
-const expenseOrAssetAccounts = (accounts: Account[]) =>
-  accounts.filter((a) => a.type === "expense" || a.type === "asset");
-
-/** Asset accounts to exclude from purchase asset dropdown (cash, receivables). */
-const EXCLUDED_ASSET_CODES = ["1110", "1120"]; // Cash and Bank, Accounts Receivable
-
-const assetAccountsForPurchase = (accounts: Account[]) =>
-  accounts.filter(
-    (a) => a.type === "asset" && !EXCLUDED_ASSET_CODES.includes(a.code)
-  );
-
 export default function PurchaseCreateModal({
   isOpen,
   onClose,
-  accounts,
   suppliers,
   projects,
   materials,
+  isSubmitting = false,
   onCreate,
 }: PurchaseCreateModalProps) {
-  const [purchaseType, setPurchaseType] = useState<PurchaseType>("expense");
-  const [accountId, setAccountId] = useState("");
   const [projectId, setProjectId] = useState("");
   const [supplierId, setSupplierId] = useState("");
-
-  const typeAccounts =
-    purchaseType === "expense"
-      ? expenseOrAssetAccounts(accounts).filter((a) => a.type === "expense")
-      : assetAccountsForPurchase(accounts);
-  useEffect(() => {
-    if (isOpen && typeAccounts.length > 0 && !typeAccounts.some((a) => String(a.id) === accountId)) {
-      setAccountId(String(typeAccounts[0]!.id));
-    }
-  }, [isOpen, typeAccounts, accountId]);
   const [reference, setReference] = useState("");
   const [date, setDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank">("cash");
@@ -77,8 +53,13 @@ export default function PurchaseCreateModal({
   ]);
   const [files, setFiles] = useState<FileList | null>(null);
   const [showPostConfirm, setShowPostConfirm] = useState(false);
+  const [errors, setErrors] = useState<{
+    supplier?: string;
+    date?: string;
+    lines?: Record<string, { quantity?: string; rate?: string }>;
+  }>({});
   const formRef = useRef<HTMLFormElement>(null);
-  const submitActionRef = useRef<"draft" | "post">("draft");
+  const submitActionRef = useRef<"draft" | "posted">("draft");
 
   const addLine = useCallback(() => {
     setLines((prev) => [
@@ -99,15 +80,56 @@ export default function PurchaseCreateModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const account = typeAccounts.find((a) => String(a.id) === accountId);
-    if (!account) return;
+    setErrors({});
+
+    const newErrors: typeof errors = {};
+    if (!supplierId?.trim()) {
+      newErrors.supplier = "Supplier is required.";
+    }
+    if (!date?.trim()) {
+      newErrors.date = "Date is required.";
+    }
+
+    const lineErrors: Record<string, { quantity?: string; rate?: string }> = {};
+    let hasValidLine = false;
+    lines.forEach((row) => {
+      if (!row.materialId) return;
+      const qty = parseFloat(row.quantity) || 0;
+      const rate = parseFloat(row.rate) || 0;
+      const qtyInvalid = qty <= 0;
+      const rateInvalid = rate <= 0;
+      if (qtyInvalid || rateInvalid) {
+        lineErrors[row.id] = {};
+        if (qtyInvalid) lineErrors[row.id].quantity = "Quantity must be greater than 0.";
+        if (rateInvalid) lineErrors[row.id].rate = "Rate must be greater than 0.";
+      } else {
+        hasValidLine = true;
+      }
+    });
+    if (Object.keys(lineErrors).length > 0) newErrors.lines = lineErrors;
+    if (!hasValidLine) {
+      if (!newErrors.lines) newErrors.lines = {};
+      const firstRowId = lines[0]?.id;
+      if (firstRowId && !newErrors.lines[firstRowId]) {
+        newErrors.lines[firstRowId] = { quantity: "Add at least one material with quantity and rate greater than 0." };
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     const supplier = suppliers.find((s) => s.id === supplierId);
     if (!supplier) return;
     const project = projectId ? projects.find((p) => p.id === projectId) ?? null : null;
     const lineItems: PurchaseLineItem[] = lines
-      .filter((r) => r.materialId && r.quantity && r.rate)
+      .filter((r) => r.materialId && (parseFloat(r.quantity) || 0) > 0 && (parseFloat(r.rate) || 0) > 0)
       .map((r) => {
-        const mat = materials.find((m) => m.id === r.materialId)!;
+        const mat = materials.find(
+          (m) => String(m.id) === String(r.materialId)
+        );
+        if (!mat) return null;
         const qty = parseFloat(r.quantity) || 0;
         const rate = parseFloat(r.rate) || 0;
         return {
@@ -120,7 +142,8 @@ export default function PurchaseCreateModal({
           rate,
           amount: qty * rate,
         };
-      });
+      })
+      .filter((l): l is NonNullable<typeof l> => l != null);
     if (lineItems.length === 0) return;
     const amount = lineItems.reduce((sum, l) => sum + l.amount, 0);
     const paidAmountNum = parseFloat(paidAmount) || 0;
@@ -130,10 +153,7 @@ export default function PurchaseCreateModal({
     const status = submitActionRef.current;
     const paymentStatus =
       paidAmountNum >= amount ? "completed" : paidAmountNum > 0 ? "partial" : "not_completed";
-    const accountRef: AccountRef = { id: account.id, code: account.code, name: account.name };
     onCreate({
-      purchaseType,
-      account: accountRef,
       project: project ?? undefined,
       supplier,
       reference: reference.trim() || "—",
@@ -152,8 +172,6 @@ export default function PurchaseCreateModal({
   };
 
   function resetForm() {
-    setPurchaseType("expense");
-    setAccountId("");
     setProjectId("");
     setSupplierId("");
     setReference("");
@@ -163,6 +181,7 @@ export default function PurchaseCreateModal({
     setDescription("");
     setLines([{ id: `row-${Date.now()}`, materialId: "", quantity: "", rate: "" }]);
     setFiles(null);
+    setErrors({});
   }
 
   const handleClose = () => {
@@ -188,43 +207,6 @@ export default function PurchaseCreateModal({
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label>Expense or Asset</Label>
-              <select
-                className={selectClass}
-                value={purchaseType}
-                onChange={(e) => {
-                  const v = e.target.value as PurchaseType;
-                  setPurchaseType(v);
-                  const next =
-                    v === "expense"
-                      ? expenseOrAssetAccounts(accounts).filter((a) => a.type === "expense")
-                      : assetAccountsForPurchase(accounts);
-                  setAccountId(next[0]?.id ?? "");
-                }}
-              >
-                <option value="expense">Expense</option>
-                <option value="asset">Asset</option>
-              </select>
-            </div>
-            <div>
-              <Label>{purchaseType === "expense" ? "Expense" : "Asset"} account</Label>
-              <select
-                className={selectClass}
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                required
-              >
-                <option value="">Select account</option>
-                {typeAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.code} – {a.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
               <Label>Project (optional)</Label>
               <select
                 className={selectClass}
@@ -242,9 +224,12 @@ export default function PurchaseCreateModal({
             <div>
               <Label>Supplier</Label>
               <select
-                className={selectClass}
+                className={selectClass + (errors.supplier ? " border-red-500 dark:border-red-400" : "")}
                 value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
+                onChange={(e) => {
+                  setSupplierId(e.target.value);
+                  if (errors.supplier) setErrors((prev) => ({ ...prev, supplier: undefined }));
+                }}
                 required
               >
                 <option value="">Select supplier</option>
@@ -254,6 +239,9 @@ export default function PurchaseCreateModal({
                   </option>
                 ))}
               </select>
+              {errors.supplier && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.supplier}</p>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -273,8 +261,14 @@ export default function PurchaseCreateModal({
                 label="Date"
                 placeholder="Select date"
                 value={date}
-                onChange={(_, dateStr) => setDate(dateStr ?? "")}
+                onChange={(_, dateStr) => {
+                  setDate(dateStr ?? "");
+                  if (errors.date) setErrors((prev) => ({ ...prev, date: undefined }));
+                }}
               />
+              {errors.date && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.date}</p>
+              )}
             </div>
           </div>
 
@@ -328,26 +322,42 @@ export default function PurchaseCreateModal({
                           </select>
                         </td>
                         <td className="px-3 py-2">
-                          <input
-                            type="number"
-                            min={0}
-                            step="any"
-                            className={inputSm + " w-full text-right"}
-                            value={row.quantity}
-                            onChange={(e) => updateLine(row.id, "quantity", e.target.value)}
-                            placeholder="0"
-                          />
+                          <div>
+                            <input
+                              type="number"
+                              min={0}
+                              step="any"
+                              className={inputSm + " w-full text-right" + (errors.lines?.[row.id]?.quantity ? " border-red-500 dark:border-red-400" : "")}
+                              value={row.quantity}
+                              onChange={(e) => {
+                                updateLine(row.id, "quantity", e.target.value);
+                                if (errors.lines?.[row.id]) setErrors((prev) => ({ ...prev, lines: { ...prev.lines, [row.id]: { ...prev.lines?.[row.id], quantity: undefined } } }));
+                              }}
+                              placeholder="0"
+                            />
+                            {errors.lines?.[row.id]?.quantity && (
+                              <p className="mt-0.5 text-xs text-red-600 dark:text-red-400">{errors.lines[row.id].quantity}</p>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-2">
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            className={inputSm + " w-full text-right"}
-                            value={row.rate}
-                            onChange={(e) => updateLine(row.id, "rate", e.target.value)}
-                            placeholder="0"
-                          />
+                          <div>
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              className={inputSm + " w-full text-right" + (errors.lines?.[row.id]?.rate ? " border-red-500 dark:border-red-400" : "")}
+                              value={row.rate}
+                              onChange={(e) => {
+                                updateLine(row.id, "rate", e.target.value);
+                                if (errors.lines?.[row.id]) setErrors((prev) => ({ ...prev, lines: { ...prev.lines, [row.id]: { ...prev.lines?.[row.id], rate: undefined } } }));
+                              }}
+                              placeholder="0"
+                            />
+                            {errors.lines?.[row.id]?.rate && (
+                              <p className="mt-0.5 text-xs text-red-600 dark:text-red-400">{errors.lines[row.id].rate}</p>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">
                           {formatCurrency(amount)}
@@ -444,7 +454,8 @@ export default function PurchaseCreateModal({
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            disabled={isSubmitting}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-60"
           >
             Cancel
           </button>
@@ -454,16 +465,18 @@ export default function PurchaseCreateModal({
               submitActionRef.current = "draft";
               formRef.current?.requestSubmit();
             }}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            disabled={isSubmitting}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-60"
           >
-            Draft
+            {isSubmitting ? "Saving…" : "Draft"}
           </button>
           <button
             type="button"
             onClick={() => setShowPostConfirm(true)}
-            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+            disabled={isSubmitting}
+            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-60"
           >
-            Post
+            {isSubmitting ? "Saving…" : "Post"}
           </button>
         </div>
       </form>
@@ -473,7 +486,7 @@ export default function PurchaseCreateModal({
       onClose={() => setShowPostConfirm(false)}
       onConfirm={() => {
         setShowPostConfirm(false);
-        submitActionRef.current = "post";
+        submitActionRef.current = "posted";
         formRef.current?.requestSubmit();
       }}
       title="Post Purchase"
