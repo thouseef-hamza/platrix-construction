@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import DatePicker from "@/components/form/date-picker";
@@ -11,6 +12,7 @@ import type {
   JournalEntryStatus,
 } from "@/types/chartOfAccounts";
 import { formatCurrency } from "@/utils/format";
+import { fetchJournalEntryNextNumber } from "@/lib/accountingApi";
 
 const inputClass =
   "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
@@ -30,6 +32,8 @@ interface JournalEntryCreateModalProps {
   onClose: () => void;
   accounts: Account[];
   onCreate: (data: Omit<JournalEntry, "id">) => void;
+  isSubmitting?: boolean;
+  accountId?: string;
 }
 
 export default function JournalEntryCreateModal({
@@ -37,7 +41,18 @@ export default function JournalEntryCreateModal({
   onClose,
   accounts,
   onCreate,
+  isSubmitting = false,
+  accountId,
 }: JournalEntryCreateModalProps) {
+  const { data: nextNumber } = useQuery({
+    queryKey: ["journal-entry-next-number", accountId],
+    queryFn: () => fetchJournalEntryNextNumber(accountId!),
+    enabled: !!accountId && isOpen,
+  });
+  useEffect(() => {
+    if (isOpen && nextNumber) setNumber(nextNumber);
+  }, [isOpen, nextNumber]);
+
   const [number, setNumber] = useState("");
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
@@ -339,10 +354,10 @@ export default function JournalEntryCreateModal({
           </button>
           <button
             type="submit"
-            disabled={!isValid}
+            disabled={!isValid || isSubmitting}
             className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
           >
-            Create
+            {isSubmitting ? "Creating…" : "Create"}
           </button>
         </div>
       </form>

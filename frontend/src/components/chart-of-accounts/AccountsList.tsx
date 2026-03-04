@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -13,7 +14,11 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency } from "@/utils/format";
 import type { Account, AccountType } from "@/types/chartOfAccounts";
-import { MOCK_ACCOUNTS } from "@/data/mockAccounts";
+import { useCompany } from "@/context/CompanyContext";
+import {
+  fetchChartOfAccounts,
+  createChartOfAccount,
+} from "@/lib/accountingApi";
 import AccountViewModal from "./AccountViewModal";
 import AccountCreateModal from "./AccountCreateModal";
 
@@ -27,8 +32,30 @@ const TYPE_LABELS: Record<AccountType, string> = {
   expense: "Expense",
 };
 
+const ACCOUNTS_QUERY_KEY = "chart-of-accounts";
+
 export default function AccountsList() {
-  const [items, setItems] = useState<Account[]>(() => [...MOCK_ACCOUNTS]);
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: [ACCOUNTS_QUERY_KEY, companyId],
+    queryFn: () => fetchChartOfAccounts(companyId!),
+    enabled: !!companyId,
+  });
+  const createMutation = useMutation({
+    mutationFn: (payload: Omit<Account, "id">) =>
+      createChartOfAccount(companyId!, {
+        code: payload.code,
+        name: payload.name,
+        type: payload.type,
+        parentId: payload.parentId,
+        isActive: payload.isActive,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ACCOUNTS_QUERY_KEY, companyId] });
+    },
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<AccountType | "">("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,13 +94,13 @@ export default function AccountsList() {
     if (totalPages > 0 && currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
-  const handleUpdate = (id: string, updates: Partial<Account>) => {
-    setItems((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
-    );
-    if (selected?.id === id)
-      setSelected((s) => (s ? { ...s, ...updates } : null));
+  const handleUpdate = (_id: string, _updates: Partial<Account>) => {
+    queryClient.invalidateQueries({ queryKey: [ACCOUNTS_QUERY_KEY, companyId] });
+    setSelected(null);
+    setViewOpen(false);
   };
+
+  if (!companyId) return null;
 
   return (
     <div>
@@ -98,6 +125,11 @@ export default function AccountsList() {
       </div>
       <div className="space-y-6">
         <ComponentCard>
+          {isLoading && (
+            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Loading accounts…
+            </p>
+          )}
           <div className="mb-6 flex flex-wrap items-end gap-4">
             <div className="max-w-xs">
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -265,11 +297,11 @@ export default function AccountsList() {
         onClose={() => setCreateOpen(false)}
         accounts={items}
         onCreate={(data) => {
-          setItems((prev) => [
-            { ...data, id: `a-${Date.now()}` },
-            ...prev,
-          ]);
+          createMutation.mutate(data, {
+            onSuccess: () => setCreateOpen(false),
+          });
         }}
+        isSubmitting={createMutation.isPending}
       />
     </div>
   );

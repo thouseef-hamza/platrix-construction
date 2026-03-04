@@ -1,0 +1,16 @@
+---
+description: Django REST API views must use APIView only; ModelViewSet and ViewSet are not allowed.
+globs: backend/**/views.py,backend/**/urls.py
+alwaysApply: false
+---
+
+# Django REST API: Use APIView Only
+
+When writing or modifying Django REST Framework API endpoints in this project:
+
+- **Use only `rest_framework.views.APIView`** (or subclasses of `APIView`) for API views.
+- **Do not use** `ModelViewSet`, `GenericViewSet`, `ReadOnlyModelViewSet`, or any `*ViewSet` from `rest_framework.viewsets`.
+- **Do not use** `rest_framework.routers.DefaultRouter` or `SimpleRouter` to register views. Define URL patterns explicitly with `path()` (or `re_path()`).
+- Implement HTTP methods explicitly on the view class (e.g. `get`, `post`, `put`, `patch`, `delete`) and dispatch logic as needed (e.g. list vs detail by URL or query).
+
+This keeps endpoints explicit and avoids ViewSet/router conventions.

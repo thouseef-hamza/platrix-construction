@@ -22,6 +22,7 @@ interface AccountCreateModalProps {
   onClose: () => void;
   accounts: Account[];
   onCreate: (data: Omit<Account, "id">) => void;
+  isSubmitting?: boolean;
 }
 
 export default function AccountCreateModal({
@@ -29,6 +30,7 @@ export default function AccountCreateModal({
   onClose,
   accounts,
   onCreate,
+  isSubmitting = false,
 }: AccountCreateModalProps) {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -162,9 +164,10 @@ export default function AccountCreateModal({
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+            disabled={isSubmitting}
+            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
           >
-            Create
+            {isSubmitting ? "Creating…" : "Create"}
           </button>
         </div>
       </form>

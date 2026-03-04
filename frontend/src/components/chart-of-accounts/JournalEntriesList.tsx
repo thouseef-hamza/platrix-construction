@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -13,15 +14,53 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/utils/format";
 import type { JournalEntry, JournalEntryStatus } from "@/types/chartOfAccounts";
-import { MOCK_JOURNAL_ENTRIES } from "@/data/mockJournalEntries";
-import { MOCK_ACCOUNTS } from "@/data/mockAccounts";
+import { useCompany } from "@/context/CompanyContext";
+import {
+  fetchJournalEntries,
+  createJournalEntry,
+  fetchChartOfAccounts,
+} from "@/lib/accountingApi";
 import JournalEntryViewModal from "./JournalEntryViewModal";
 import JournalEntryCreateModal from "./JournalEntryCreateModal";
 
 const PAGE_SIZE = 8;
+const JOURNAL_ENTRIES_QUERY_KEY = "journal-entries";
+const ACCOUNTS_QUERY_KEY = "chart-of-accounts";
 
 export default function JournalEntriesList() {
-  const [items, setItems] = useState<JournalEntry[]>(() => [...MOCK_JOURNAL_ENTRIES]);
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: [JOURNAL_ENTRIES_QUERY_KEY, companyId],
+    queryFn: () => fetchJournalEntries(companyId!),
+    enabled: !!companyId,
+  });
+  const { data: accounts = [] } = useQuery({
+    queryKey: [ACCOUNTS_QUERY_KEY, companyId],
+    queryFn: () => fetchChartOfAccounts(companyId!),
+    enabled: !!companyId,
+  });
+  const createMutation = useMutation({
+    mutationFn: (payload: Omit<JournalEntry, "id">) =>
+      createJournalEntry(companyId!, {
+        number: payload.number,
+        date: payload.date,
+        description: payload.description,
+        status: payload.status,
+        lines: payload.lines.map((l) => ({
+          accountId: l.accountId,
+          debit: l.debit,
+          credit: l.credit,
+          description: l.description,
+        })),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [JOURNAL_ENTRIES_QUERY_KEY, companyId],
+      });
+    },
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<JournalEntryStatus | "">("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,6 +95,8 @@ export default function JournalEntriesList() {
     if (totalPages > 0 && currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
+  if (!companyId) return null;
+
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -79,6 +120,11 @@ export default function JournalEntriesList() {
       </div>
       <div className="space-y-6">
         <ComponentCard>
+          {isLoading && (
+            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Loading journal entries…
+            </p>
+          )}
           <div className="mb-6 flex flex-wrap items-end gap-4">
             <div className="max-w-xs">
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -254,13 +300,14 @@ export default function JournalEntriesList() {
       <JournalEntryCreateModal
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}
-        accounts={MOCK_ACCOUNTS}
+        accounts={accounts}
         onCreate={(data) => {
-          setItems((prev) => [
-            { ...data, id: `je-${Date.now()}` },
-            ...prev,
-          ]);
+          createMutation.mutate(data, {
+            onSuccess: () => setCreateOpen(false),
+          });
         }}
+        isSubmitting={createMutation.isPending}
+        accountId={companyId ?? undefined}
       />
     </div>
   );
