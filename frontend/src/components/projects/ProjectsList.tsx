@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -18,10 +19,22 @@ import {
   type Project,
   type ProjectStatus,
   type ProjectType,
+  type ClientOption,
 } from "@/types/project";
-import { MOCK_CLIENTS, MOCK_PROJECTS } from "@/data/mockProjects";
+import { useCompany } from "@/context/CompanyContext";
+import { fetchCompanies } from "@/lib/companiesApi";
+import {
+  fetchProjects,
+  createProject,
+  updateProject,
+  type CreateProjectPayload,
+} from "@/lib/projectsApi";
 import ProjectViewModal from "./ProjectViewModal";
 import ProjectCreateModal from "./ProjectCreateModal";
+
+const PROJECTS_QUERY_KEY = "projects";
+const COMPANIES_CLIENTS_QUERY_KEY = "companies-clients";
+const COMPANY_TYPE_CLIENT = 0;
 
 const PAGE_SIZE = 5;
 
@@ -62,7 +75,47 @@ function formatDate(dateStr: string | undefined): string {
 }
 
 export default function ProjectsList() {
-  const [projects, setProjects] = useState<Project[]>(() => [...MOCK_PROJECTS]);
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
+  const { data: projects = [], isLoading } = useQuery({
+    queryKey: [PROJECTS_QUERY_KEY, companyId],
+    queryFn: () => fetchProjects(),
+    enabled: !!companyId,
+  });
+  const { data: companies = [] } = useQuery({
+    queryKey: [COMPANIES_CLIENTS_QUERY_KEY, companyId],
+    queryFn: () => fetchCompanies(COMPANY_TYPE_CLIENT),
+    enabled: !!companyId,
+  });
+  const clients: ClientOption[] = useMemo(
+    () => companies.map((c) => ({ id: String(c.id), name: c.name })),
+    [companies]
+  );
+
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateProjectPayload) => createProject(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PROJECTS_QUERY_KEY, companyId] });
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: Parameters<typeof updateProject>[1];
+    }) => updateProject(id, payload),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: [PROJECTS_QUERY_KEY, companyId] });
+      setSelectedProject((prev) =>
+        prev && String(updated.id) === prev.id ? { ...prev, ...updated } : prev
+      );
+      setIsCreateModalOpen(false);
+      setProjectToEdit(null);
+    },
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -91,17 +144,21 @@ export default function ProjectsList() {
   }, [projects, searchQuery, typeFilter, statusFilter, clientFilter, currentPage]);
 
   const handleCreateProject = (data: Omit<Project, "id">) => {
-    const id = String(Date.now());
-    const createdActivity = {
-      id: `pa-${id}`,
-      type: "created" as const,
-      description: "Project created",
-      createdAt: new Date().toISOString(),
+    const payload: CreateProjectPayload = {
+      name: data.projectName,
+      code: data.projectCode,
+      client: data.client.id ? Number(data.client.id) : null,
+      project_type: data.type,
+      status: data.status,
+      location: data.location,
+      contract_value: data.contractValue ?? 0,
+      budget: data.budget,
+      start_date: data.startDate ?? null,
+      end_date: data.endDate ?? null,
     };
-    setProjects((prev) => [
-      { ...data, id, activities: [createdActivity] },
-      ...prev,
-    ]);
+    createMutation.mutate(payload, {
+      onSuccess: () => setIsCreateModalOpen(false),
+    });
   };
 
   const handleRowClick = (project: Project) => {
@@ -110,12 +167,27 @@ export default function ProjectsList() {
   };
 
   const handleUpdateProject = (projectId: string, updates: Partial<Project>) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === projectId ? { ...p, ...updates } : p))
-    );
-    if (selectedProject?.id === projectId) {
-      setSelectedProject((prev) => (prev ? { ...prev, ...updates } : null));
-    }
+    const id = Number(projectId);
+    if (Number.isNaN(id)) return;
+    const payload = {
+      name: updates.projectName,
+      code: updates.projectCode,
+      client:
+        updates.client != null && updates.client.id
+          ? Number(updates.client.id)
+          : null,
+      project_type: updates.type,
+      status: updates.status,
+      location: updates.location,
+      contract_value: updates.contractValue,
+      budget: updates.budget,
+      start_date: updates.startDate ?? null,
+      end_date: updates.endDate ?? null,
+    };
+    const cleaned = Object.fromEntries(
+      Object.entries(payload).filter(([, v]) => v !== undefined)
+    ) as Parameters<typeof updateProject>[1];
+    updateMutation.mutate({ id, payload: cleaned });
   };
 
   const handleAddComment = (projectId: string, message: string) => {
@@ -159,6 +231,8 @@ export default function ProjectsList() {
 
   const { pageItems, total, totalPages } = filteredAndPaginated;
 
+  if (!companyId) return null;
+
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
@@ -190,6 +264,11 @@ export default function ProjectsList() {
       </div>
       <div className="space-y-6">
         <ComponentCard>
+          {isLoading && (
+            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Loading projects…
+            </p>
+          )}
           {/* Search and filters */}
           <div className="mb-6 space-y-4">
             <div className="flex flex-wrap items-end gap-4">
@@ -261,7 +340,7 @@ export default function ProjectsList() {
                   }}
                 >
                   <option value="">All clients</option>
-                  {MOCK_CLIENTS.map((c) => (
+                  {clients.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -445,10 +524,11 @@ export default function ProjectsList() {
           setIsCreateModalOpen(false);
           setProjectToEdit(null);
         }}
-        clients={MOCK_CLIENTS}
+        clients={clients}
         onCreate={handleCreateProject}
         project={projectToEdit}
         onUpdate={handleUpdateProject}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
       />
     </div>
   );

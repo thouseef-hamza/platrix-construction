@@ -3,12 +3,44 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.models import AccountUser
 
 from .models import User
 from .serializers import AccountSummarySerializer, LoginSerializer, UserSummarySerializer
+
+
+class RefreshTokenView(APIView):
+    """
+    POST with { "refresh": "<refresh_token>" }.
+    Returns { "token": access_token, "refresh": refresh_token }.
+    Use when the access token has expired to get a new one without re-login.
+    """
+
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request: Request) -> Response:
+        refresh_str = request.data.get("refresh")
+        if not refresh_str:
+            return Response(
+                {"detail": "Refresh token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            refresh = RefreshToken(refresh_str)
+            access = str(refresh.access_token)
+            return Response(
+                {"token": access, "refresh": str(refresh)},
+                status=status.HTTP_200_OK,
+            )
+        except (InvalidToken, TokenError):
+            return Response(
+                {"detail": "Invalid or expired refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
 
 class LoginView(APIView):

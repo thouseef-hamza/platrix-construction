@@ -94,6 +94,10 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# User uploads (e.g. project documents); served in dev via config/urls.py
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR  # files go to backend/documents/... via upload_to
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom user model (must be set before first migration)

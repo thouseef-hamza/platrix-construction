@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
 import Badge from "@/components/ui/badge/Badge";
 import {
@@ -14,6 +15,13 @@ import {
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import BudgetGauge from "@/components/common/BudgetGauge";
+import {
+  deleteProjectDocument,
+  downloadProjectDocument,
+  fetchProjectDocuments,
+  uploadProjectDocument,
+  type ProjectDocument,
+} from "@/lib/projectsApi";
 import {
   PROJECT_TYPES,
   PROJECT_STATUSES,
@@ -135,6 +143,52 @@ export default function ProjectViewModal({
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [newComment, setNewComment] = useState("");
   const [previewDocument, setPreviewDocument] = useState<ProjectAttachment | null>(null);
+  const [uploadName, setUploadName] = useState("");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+
+  const queryClient = useQueryClient();
+  const projectIdNum = project?.id != null ? Number(project.id) : null;
+  const {
+    data: projectDocuments = [],
+    isLoading: documentsLoading,
+  } = useQuery({
+    queryKey: ["project-documents", projectIdNum],
+    queryFn: () => fetchProjectDocuments(projectIdNum!),
+    enabled: isOpen && projectIdNum != null,
+  });
+  const uploadDocMutation = useMutation({
+    mutationFn: ({
+      projectId,
+      file,
+      name,
+      description,
+    }: {
+      projectId: number;
+      file: File;
+      name?: string;
+      description?: string;
+    }) => uploadProjectDocument(projectId, file, { name, description }),
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
+      setUploadFile(null);
+      setUploadName("");
+      setUploadDescription("");
+      fileInputRef.current?.value && (fileInputRef.current.value = "");
+    },
+  });
+  const deleteDocMutation = useMutation({
+    mutationFn: ({
+      projectId,
+      documentId,
+    }: {
+      projectId: number;
+      documentId: number;
+    }) => deleteProjectDocument(projectId, documentId),
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
+    },
+  });
 
   const budget = project?.budget ?? 0;
   const { income, expenses, variation, recentTransactions, financialTransactions, monthlyInvoices, monthlyExpenses } = useProjectFinancials(budget);
@@ -151,34 +205,51 @@ export default function ProjectViewModal({
   if (!project) return null;
 
   const statusLabel = PROJECT_STATUSES.find((s) => s.value === project.status)?.label ?? project.status;
-  const attachments = project.attachments ?? [];
   const budgetSpent = expenses;
   const budgetPercent = Math.min(100, (budgetSpent / project.budget) * 100);
   const budgetPercentRounded = Math.round(budgetPercent * 100) / 100;
   const budgetChangePercent = 10;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length || !onUpdateProject) return;
-    const newAttachments = Array.from(files).map((f) => ({ name: f.name }));
-    const fileNames = newAttachments.map((a) => a.name).join(", ");
-    const newActivity: ProjectActivity = {
-      id: `act-${Date.now()}`,
-      type: "document_uploaded",
-      description: `Uploaded ${fileNames}`,
-      createdAt: new Date().toISOString(),
-    };
-    onUpdateProject(project.id, {
-      attachments: [...attachments, ...newAttachments],
-      activities: [...activities, newActivity],
-    });
+  const handleDocumentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setUploadFile(file ?? null);
+    if (file && !uploadName) setUploadName(file.name);
     e.target.value = "";
   };
 
-  const handleRemoveAttachment = (index: number) => {
-    if (!onUpdateProject) return;
-    const updated = attachments.filter((_, i) => i !== index);
-    onUpdateProject(project.id, { attachments: updated.length > 0 ? updated : undefined });
+  const handleUploadDocument = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFile || projectIdNum == null) return;
+    uploadDocMutation.mutate({
+      projectId: projectIdNum,
+      file: uploadFile,
+      name: uploadName.trim() || undefined,
+      description: uploadDescription.trim() || undefined,
+    });
+  };
+
+  const openDocPreview = (doc: ProjectDocument) => {
+    setPreviewDocument({
+      name: doc.name,
+      url: doc.file_url,
+      filename: doc.filename,
+      projectId: projectIdNum ?? undefined,
+      documentId: doc.id,
+    });
+  };
+
+  const handleDownloadDocument = (doc: ProjectDocument) => {
+    if (projectIdNum == null) return;
+    downloadProjectDocument(
+      projectIdNum,
+      doc.id,
+      doc.filename || doc.name || "document"
+    );
+  };
+
+  const handleDeleteDocument = (doc: ProjectDocument) => {
+    if (!projectIdNum || !window.confirm(`Delete "${doc.name || doc.filename}"?`)) return;
+    deleteDocMutation.mutate({ projectId: projectIdNum, documentId: doc.id });
   };
 
   const handlePostComment = (e: React.FormEvent) => {
@@ -399,45 +470,36 @@ export default function ProjectViewModal({
 
         {/* Documents */}
         {activeTab === "documents" && (
-          <div className="w-full">
-            <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="w-full space-y-6">
+            <div className="flex items-center justify-between gap-4">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Documents</h3>
-              {onUpdateProject && (
-                <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={handleFileChange}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add document
-                  </button>
-                </>
-              )}
             </div>
-            {attachments.length > 0 ? (
+
+            {documentsLoading ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-4">Loading documents…</p>
+            ) : projectDocuments.length > 0 ? (
               <ul className="space-y-2 w-full">
-                {attachments.map((a, i) => (
+                {projectDocuments.map((doc) => (
                   <li
-                    key={i}
+                    key={doc.id}
                     className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 w-full rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2"
                   >
-                    <span className="min-w-0 truncate flex-1">{a.name}</span>
+                    <span className="min-w-0 truncate flex-1" title={doc.description || undefined}>
+                      {doc.name || doc.filename}
+                    </span>
+                    {doc.size != null && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                        {(doc.size / 1024).toFixed(1)} KB
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                      {formatDate(doc.created_at.slice(0, 10))}
+                    </span>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setPreviewDocument(a)}
-                        title="View"
+                        onClick={() => openDocPreview(doc)}
+                        title="Preview"
                         className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -445,25 +507,96 @@ export default function ProjectViewModal({
                           <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </button>
-                      {onUpdateProject && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAttachment(i)}
-                          title="Delete"
-                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-white/10 dark:hover:text-red-400"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadDocument(doc)}
+                        title="Download"
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </button>
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                        title="Open in new tab"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDocument(doc)}
+                        disabled={deleteDocMutation.isPending}
+                        title="Delete"
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-white/10 dark:hover:text-red-400 disabled:opacity-50"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400 py-4">No documents. Add one using the button above.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-4">No documents yet. Upload one below.</p>
             )}
+
+            {/* Upload form */}
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.02] p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Upload document</h4>
+              <form onSubmit={handleUploadDocument} className="space-y-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleDocumentFileChange}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    {uploadFile ? uploadFile.name : "Choose file"}
+                  </button>
+                  {uploadFile && (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Display name (optional)"
+                        value={uploadName}
+                        onChange={(e) => setUploadName(e.target.value)}
+                        className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 min-w-[160px]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Description (optional)"
+                        value={uploadDescription}
+                        onChange={(e) => setUploadDescription(e.target.value)}
+                        className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 min-w-[160px]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={uploadDocMutation.isPending}
+                        className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+                      >
+                        {uploadDocMutation.isPending ? "Uploading…" : "Upload"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
@@ -563,16 +696,58 @@ export default function ProjectViewModal({
           <div className="flex-1 min-h-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 overflow-hidden flex items-center justify-center">
             {previewDocument.url ? (
               (() => {
-                const ext = previewDocument.name.split(".").pop()?.toLowerCase();
+                const nameForExt = previewDocument.filename || previewDocument.name;
+                const ext = nameForExt.split(".").pop()?.toLowerCase();
                 const isPdf = ext === "pdf";
                 const isImage = ["png", "jpg", "jpeg", "gif", "webp"].includes(ext ?? "");
+                const pdfFallback = (
+                  <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-gray-100 dark:bg-gray-800/50 rounded-lg">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">PDF preview is not available in this browser.</p>
+                    <div className="flex gap-4 mt-3">
+                      <a
+                        href={previewDocument.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-600 dark:text-brand-400 font-medium hover:underline"
+                      >
+                        Open in new tab
+                      </a>
+                      {previewDocument.projectId != null && previewDocument.documentId != null ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            downloadProjectDocument(
+                              previewDocument.projectId!,
+                              previewDocument.documentId!,
+                              previewDocument.filename || previewDocument.name || "document"
+                            )
+                          }
+                          className="text-brand-600 dark:text-brand-400 font-medium hover:underline bg-transparent border-0 cursor-pointer"
+                        >
+                          Download
+                        </button>
+                      ) : (
+                        <a
+                          href={previewDocument.url}
+                          download={previewDocument.filename || previewDocument.name}
+                          className="text-brand-600 dark:text-brand-400 font-medium hover:underline"
+                        >
+                          Download
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
                 if (isPdf) {
                   return (
-                    <iframe
-                      src={previewDocument.url}
+                    <object
+                      data={previewDocument.url}
+                      type="application/pdf"
+                      className="w-full h-[70vh] min-h-[400px] border-0 rounded-lg"
                       title={previewDocument.name}
-                      className="w-full h-[70vh] min-h-[400px] border-0"
-                    />
+                    >
+                      {pdfFallback}
+                    </object>
                   );
                 }
                 if (isImage) {

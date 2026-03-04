@@ -26,6 +26,7 @@ interface ProjectCreateModalProps {
   /** When provided, modal works in edit mode with prefilled data. */
   project?: Project | null;
   onUpdate?: (projectId: string, data: Partial<Project>) => void;
+  isSubmitting?: boolean;
 }
 
 export default function ProjectCreateModal({
@@ -35,6 +36,7 @@ export default function ProjectCreateModal({
   onCreate,
   project: projectToEdit,
   onUpdate,
+  isSubmitting = false,
 }: ProjectCreateModalProps) {
   const [projectName, setProjectName] = useState("");
   const [projectCode, setProjectCode] = useState("");
@@ -82,15 +84,16 @@ export default function ProjectCreateModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const client = clients.find((c) => c.id === clientId);
-    if (!client) return;
+    const client = clientId ? clients.find((c) => c.id === clientId) : null;
+    if (!clientId && !isEditMode) return; // require client for create
     const budgetNum = parseFloat(budget) || 0;
     const contractValueNum = parseFloat(contractValue) || 0;
+    const clientOption = client ?? { id: "", name: "—" };
 
     if (isEditMode && projectToEdit) {
       onUpdate!(projectToEdit.id, {
         projectName: projectName.trim() || "Unnamed Project",
-        client,
+        client: clientOption,
         projectCode: projectCode.trim() || "—",
         type,
         location: location.trim() || "—",
@@ -103,7 +106,7 @@ export default function ProjectCreateModal({
     } else {
       onCreate({
         projectName: projectName.trim() || "Unnamed Project",
-        client,
+        client: clientOption,
         projectCode: projectCode.trim() || "—",
         type,
         location: location.trim() || "—",
@@ -176,7 +179,7 @@ export default function ProjectCreateModal({
               className={selectClass}
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
-              required
+              required={!isEditMode}
             >
               <option value="">Select client</option>
               {clients.map((c) => (
@@ -283,9 +286,16 @@ export default function ProjectCreateModal({
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+            disabled={isSubmitting}
+            className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
           >
-            Create Project
+            {isSubmitting
+              ? isEditMode
+                ? "Saving…"
+                : "Creating…"
+              : isEditMode
+                ? "Save"
+                : "Create Project"}
           </button>
         </div>
       </form>

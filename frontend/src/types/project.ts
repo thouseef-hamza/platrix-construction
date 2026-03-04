@@ -26,6 +26,11 @@ export interface ProjectAttachment {
   name: string;
   /** Optional URL for document preview (e.g. from storage). */
   url?: string;
+  /** Optional filename (e.g. "file.pdf") for type detection when name has no extension. */
+  filename?: string;
+  /** Optional: for direct download from preview (API download endpoint). */
+  projectId?: number;
+  documentId?: number;
 }
 
 export type ProjectActivityType =
