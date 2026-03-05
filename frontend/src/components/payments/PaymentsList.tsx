@@ -17,6 +17,7 @@ import { formatCurrency, formatDate } from "@/utils/format";
 import type { Invoice } from "@/types/invoice";
 import { useCompany } from "@/context/CompanyContext";
 import { fetchCompanies } from "@/lib/companiesApi";
+import { fetchProjects } from "@/lib/projectsApi";
 import {
   fetchInvoices,
   createInvoice,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/invoicesApi";
 import InvoiceViewModal from "@/components/invoice/InvoiceViewModal";
 import InvoiceCreateModal from "@/components/invoice/InvoiceCreateModal";
+import type { ProjectOption } from "@/components/invoice/InvoiceCreateModal";
 
 const PAGE_SIZE = 5;
 const INVOICE_TYPE_CLIENT = 0;
@@ -62,6 +64,17 @@ export default function PaymentsList() {
     enabled: !!companyId && createOpen,
   });
 
+  const { data: projectsRaw = [] } = useQuery({
+    queryKey: ["projects", companyId],
+    queryFn: () => fetchProjects(),
+    enabled: !!companyId && createOpen,
+  });
+
+  const projectOptions: ProjectOption[] = useMemo(
+    () => projectsRaw.map((p) => ({ id: String(p.id), name: p.projectName })),
+    [projectsRaw]
+  );
+
   const { pageItems, total, totalPages } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const list = q
@@ -89,6 +102,7 @@ export default function PaymentsList() {
     mutationFn: createInvoice,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
 
@@ -98,6 +112,7 @@ export default function PaymentsList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["invoice", invoiceToEdit?.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
       setInvoiceToEdit(null);
       setCreateOpen(false);
     },
@@ -267,7 +282,7 @@ export default function PaymentsList() {
         title="Client Invoice"
         invoiceType={INVOICE_TYPE_CLIENT}
         parties={clients}
-        projects={[]}
+        projects={projectOptions}
         onCreate={handleCreate}
         invoiceToEdit={invoiceToEdit}
         onUpdate={handleUpdate}

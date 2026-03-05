@@ -1,7 +1,7 @@
 import type { Payment } from "@/types/payment";
 import { MOCK_CLIENTS } from "./mockCompanies";
 
-const clients = MOCK_CLIENTS;
+const clients = MOCK_CLIENTS.map((c) => ({ id: String(c.id), name: c.name }));
 
 export const MOCK_PAYMENTS: Payment[] = [
   { id: "p1", client: clients[0]!, amount: 125000, date: "2024-10-01", reference: "INV-2024-001", status: "posted", paymentMethod: "bank", receivedAmount: 0, attachments: [{ name: "payment-voucher.pdf" }] },

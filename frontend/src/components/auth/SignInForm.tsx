@@ -8,14 +8,14 @@ import { getErrorMessage } from "@/lib/api";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login } = useAuth();
+  const { login, isAuthenticated, authReady, accounts } = useAuth();
   const router = useRouter();
 
   const loginMutation = useMutation({
@@ -30,10 +30,21 @@ export default function SignInForm() {
     },
   });
 
+  useEffect(() => {
+    if (!authReady) return;
+    if (isAuthenticated && accounts.length > 0) {
+      router.replace(`/accounts/${accounts[0].id}`);
+    }
+  }, [authReady, isAuthenticated, accounts, router]);
+
   const error = loginMutation.error
     ? getErrorMessage(loginMutation.error)
     : "";
   const loading = loginMutation.isPending;
+
+  if (authReady && isAuthenticated && accounts.length > 0) {
+    return null;
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

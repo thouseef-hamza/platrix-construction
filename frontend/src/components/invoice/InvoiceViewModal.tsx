@@ -175,6 +175,7 @@ export default function InvoiceViewModal({
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["invoice", id] });
       queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
 
@@ -195,6 +196,7 @@ export default function InvoiceViewModal({
     onSuccess: (_, { invoiceId: invId }) => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
       queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
       setAddPaymentOpen(false);
     },
   });
@@ -212,6 +214,7 @@ export default function InvoiceViewModal({
     onSuccess: (_, { invoiceId: invId }) => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
       queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
       setPaymentToEdit(null);
     },
   });
@@ -222,6 +225,7 @@ export default function InvoiceViewModal({
     onSuccess: (_, { invoiceId: invId }) => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
       queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
       setPaymentToDelete(null);
     },
   });

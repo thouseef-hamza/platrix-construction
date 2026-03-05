@@ -136,7 +136,7 @@ docker-stop:
 # -------------------------------
 
 deploy:
-	git pull origin main
+	git pull origin production
 	$(UV) sync --frozen
 	$(MANAGE) migrate
 	$(MANAGE) collectstatic --noinput

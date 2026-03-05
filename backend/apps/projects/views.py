@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -8,6 +11,17 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import Account, AccountUser
 from apps.core.models import Document
+from apps.expenses.constants import EXPENSE_STATUS_POSTED
+from apps.expenses.models import Expense
+from apps.invoices.constants import (
+    INVOICE_STATUS_POSTED,
+    INVOICE_TYPE_CLIENT,
+    INVOICE_TYPE_SUBCONTRACTOR,
+    PAYMENT_LEDGER_POSTED,
+)
+from apps.invoices.models import Invoice, InvoicePayment
+from apps.purchase.constants import PURCHASE_STATUS_POSTED
+from apps.purchase.models import Purchase
 
 from .models import Project
 from .serializers import (
@@ -220,6 +234,151 @@ class ProjectDocumentDestroyAPIView(APIView):
         doc.is_deleted = True
         doc.save(update_fields=["is_deleted", "updated_at"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectFinancialAPIView(APIView):
+    """
+    GET project financial summary: income, expense, variation, and payment transactions.
+    Income = sum of posted payments on client invoices for this project.
+    Expense = sum of posted payments on subcontractor invoices + expenses + purchases for this project.
+    Transactions = all payment entries (income and expense) sorted by date desc.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        if _current_account_id(request) is None:
+            return Response(
+                {"detail": "x-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        project = get_project_queryset(request).filter(pk=pk).first()
+        if not project:
+            return Response(
+                {"detail": "Project not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if project.account_id not in user_account_ids(request):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have access to this account.")
+
+        # Income: posted payments on posted client invoices for this project
+        income_result = InvoicePayment.objects.filter(
+            invoice__project_id=pk,
+            invoice__invoice_type=INVOICE_TYPE_CLIENT,
+            invoice__status=INVOICE_STATUS_POSTED,
+            invoice__is_deleted=False,
+            status=PAYMENT_LEDGER_POSTED,
+            is_deleted=False,
+        ).aggregate(total=Sum("amount"))
+        income = float(income_result["total"] or Decimal("0.00"))
+
+        # Expense: posted subcontractor invoices + expenses + purchases (amount recognized when posted)
+        sub_inv_result = Invoice.objects.filter(
+            project_id=pk,
+            invoice_type=INVOICE_TYPE_SUBCONTRACTOR,
+            status=INVOICE_STATUS_POSTED,
+            is_deleted=False,
+        ).aggregate(total=Sum("amount"))
+        expense_result = Expense.objects.filter(
+            project_id=pk,
+            status=EXPENSE_STATUS_POSTED,
+            is_deleted=False,
+        ).aggregate(total=Sum("amount"))
+        purchase_result = Purchase.objects.filter(
+            project_id=pk,
+            status=PURCHASE_STATUS_POSTED,
+            is_deleted=False,
+        ).aggregate(total=Sum("amount"))
+        expense = (
+            float(sub_inv_result["total"] or Decimal("0.00"))
+            + float(expense_result["total"] or Decimal("0.00"))
+            + float(purchase_result["total"] or Decimal("0.00"))
+        )
+
+        variation = income - expense
+
+        # Build transactions list (payment entries)
+        transactions = []
+
+        for ip in InvoicePayment.objects.filter(
+            invoice__project_id=pk,
+            invoice__invoice_type=INVOICE_TYPE_CLIENT,
+            invoice__status=INVOICE_STATUS_POSTED,
+            invoice__is_deleted=False,
+            status=PAYMENT_LEDGER_POSTED,
+            is_deleted=False,
+        ).select_related("invoice", "invoice__party").order_by("-date", "-id"):
+            amt = float(ip.amount or 0)
+            if amt <= 0:
+                continue
+            transactions.append({
+                "id": f"invoice-payment-{ip.id}",
+                "date": ip.date.isoformat(),
+                "description": f"Client invoice – {ip.invoice.reference} – {ip.invoice.party.name}",
+                "amount": amt,
+                "type": "income",
+            })
+
+        for inv in Invoice.objects.filter(
+            project_id=pk,
+            invoice_type=INVOICE_TYPE_SUBCONTRACTOR,
+            status=INVOICE_STATUS_POSTED,
+            is_deleted=False,
+        ).select_related("party").order_by("-date", "-id"):
+            amt = float(inv.amount or 0)
+            if amt <= 0:
+                continue
+            transactions.append({
+                "id": f"subcontractor-invoice-{inv.id}",
+                "date": inv.date.isoformat(),
+                "description": f"Subcontractor invoice – {inv.reference} – {inv.party.name}",
+                "amount": -amt,
+                "type": "expense",
+            })
+
+        for exp in Expense.objects.filter(
+            project_id=pk,
+            status=EXPENSE_STATUS_POSTED,
+            is_deleted=False,
+        ).select_related("payee").order_by("-date", "-id"):
+            amt = float(exp.amount or 0)
+            if amt <= 0:
+                continue
+            payee = exp.payee.name if exp.payee else (exp.employee_name or "Expense")
+            desc = (exp.reference or (exp.description or "")[:50] or "Expense").strip()
+            transactions.append({
+                "id": f"expense-{exp.id}",
+                "date": exp.date.isoformat(),
+                "description": f"Expense – {desc} – {payee}",
+                "amount": -amt,
+                "type": "expense",
+            })
+
+        for pur in Purchase.objects.filter(
+            project_id=pk,
+            status=PURCHASE_STATUS_POSTED,
+            is_deleted=False,
+        ).select_related("supplier").order_by("-date", "-id"):
+            amt = float(pur.amount or 0)
+            if amt <= 0:
+                continue
+            transactions.append({
+                "id": f"purchase-{pur.id}",
+                "date": pur.date.isoformat(),
+                "description": f"Purchase – {pur.reference} – {pur.supplier.name}",
+                "amount": -amt,
+                "type": "expense",
+            })
+
+        transactions.sort(key=lambda t: (t["date"], t["id"]), reverse=True)
+
+        return Response({
+            "income": round(income, 2),
+            "expense": round(expense, 2),
+            "variation": round(variation, 2),
+            "transactions": transactions,
+        })
 
 
 class ProjectDocumentDownloadAPIView(APIView):

@@ -65,6 +65,7 @@ export default function PurchasesList() {
     mutationFn: createPurchase,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const updateMutation = useMutation({
@@ -74,12 +75,14 @@ export default function PurchasesList() {
       queryClient.setQueryData(["purchase", String(id)], data);
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY], refetchType: "active" });
       queryClient.invalidateQueries({ queryKey: ["purchase", String(id)], refetchType: "active" });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deletePurchase(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const addPaymentMutation = useMutation({
@@ -93,6 +96,7 @@ export default function PurchasesList() {
     onSuccess: (_, { purchaseId }) => {
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["purchase", String(purchaseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const patchPaymentMutation = useMutation({
@@ -108,6 +112,7 @@ export default function PurchasesList() {
     onSuccess: (_, { purchaseId }) => {
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["purchase", String(purchaseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const deletePaymentMutation = useMutation({
@@ -116,6 +121,7 @@ export default function PurchasesList() {
     onSuccess: (_, { purchaseId }) => {
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["purchase", String(purchaseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
 

@@ -205,6 +205,32 @@ export async function deleteProjectDocument(
   await api.delete(`/projects/${projectId}/documents/${documentId}/`);
 }
 
+// --- Project financial summary ---
+
+export interface ProjectFinancialTransaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: "income" | "expense";
+}
+
+export interface ProjectFinancialSummary {
+  income: number;
+  expense: number;
+  variation: number;
+  transactions: ProjectFinancialTransaction[];
+}
+
+export async function fetchProjectFinancials(
+  projectId: number
+): Promise<ProjectFinancialSummary> {
+  const { data } = await api.get<ProjectFinancialSummary>(
+    `/projects/${projectId}/financial/`
+  );
+  return data ?? { income: 0, expense: 0, variation: 0, transactions: [] };
+}
+
 /** Download a project document as a file (no new tab). Uses API so auth is sent. */
 export async function downloadProjectDocument(
   projectId: number,

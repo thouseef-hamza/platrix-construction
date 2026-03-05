@@ -68,6 +68,10 @@ export interface EmployeeSalaryEntry {
   date: string;
   amount: number;
   description: string;
+  paymentMethod?: "cash" | "bank";
+  paymentMethodDisplay?: string;
+  status?: "draft" | "posted";
+  statusDisplay?: string;
   createdAt?: string;
 }
 

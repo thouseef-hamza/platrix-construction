@@ -1,7 +1,7 @@
-import type { Purchase, PurchaseLineItem } from "@/types/purchase";
+import type { Purchase, PurchaseLineItem, SupplierRef } from "@/types/purchase";
 import { MOCK_SUPPLIERS } from "./mockCompanies";
 
-const suppliers = MOCK_SUPPLIERS;
+const suppliers: SupplierRef[] = MOCK_SUPPLIERS.map((c) => ({ id: String(c.id), name: c.name }));
 
 const projectRefs = [
   { id: "1", name: "Downtown Office Tower" },

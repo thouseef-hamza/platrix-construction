@@ -1,18 +1,64 @@
 from rest_framework import serializers
 
+from apps.core.models import Document
+
 from .models import Employee, EmployeeSalaryEntry, EmployeeTransaction
 
 
+class EmployeeDocumentListSerializer(serializers.ModelSerializer):
+    """List document for an employee (read-only)."""
+
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = (
+            "id",
+            "name",
+            "filename",
+            "file_url",
+            "size",
+            "description",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at")
+
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            return obj.file.url
+        return None
+
+
 class EmployeeSalaryEntryReadSerializer(serializers.ModelSerializer):
+    payment_method_display = serializers.CharField(
+        source="get_payment_method_display", read_only=True
+    )
+    status_display = serializers.CharField(
+        source="get_status_display", read_only=True
+    )
+
     class Meta:
         model = EmployeeSalaryEntry
-        fields = ("id", "date", "amount", "description", "created_at")
+        fields = (
+            "id",
+            "date",
+            "amount",
+            "description",
+            "payment_method",
+            "payment_method_display",
+            "status",
+            "status_display",
+            "created_at",
+        )
 
 
 class EmployeeSalaryEntryWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeSalaryEntry
-        fields = ("date", "amount", "description")
+        fields = ("date", "amount", "description", "payment_method", "status")
 
     def validate_amount(self, value):
         if value is not None and value < 0:

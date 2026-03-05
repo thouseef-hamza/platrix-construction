@@ -205,16 +205,18 @@ export default function ProjectsList() {
       description: `${userName} added a comment`,
       createdAt: new Date().toISOString(),
     };
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              comments: [...(p.comments ?? []), comment],
-              activities: [...(p.activities ?? []), activity],
-            }
-          : p
-      )
+    queryClient.setQueryData<Project[]>(
+      [PROJECTS_QUERY_KEY, companyId],
+      (prev = []) =>
+        prev.map((p) =>
+          p.id === projectId
+            ? {
+                ...p,
+                comments: [...(p.comments ?? []), comment],
+                activities: [...(p.activities ?? []), activity],
+              }
+            : p
+        )
     );
     if (selectedProject?.id === projectId) {
       setSelectedProject((prev) =>

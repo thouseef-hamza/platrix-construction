@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db.models import DecimalField, F, Q, Sum, Value
+from django.db.models import Case, DecimalField, F, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -10,7 +10,11 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import Account, AccountUser
 
-from .constants import ENTRY_STATUS_POSTED
+from .constants import (
+    ACCOUNT_TYPE_ASSET,
+    ACCOUNT_TYPE_EXPENSE,
+    ENTRY_STATUS_POSTED,
+)
 from .models import ChartOfAccount, LedgerEntry, get_next_entry_number
 from .serializers import (
     ChartOfAccountListSerializer,
@@ -48,17 +52,22 @@ def get_chart_of_account_queryset(request):
     account_id = _current_account_id(request)
     if account_id is not None:
         qs = qs.filter(account_id=account_id)
-    # Balance = sum(debit - credit) from posted ledger lines only
+    # Balance: debit-normal (asset, expense) = debit - credit; credit-normal (liability, equity, revenue) = credit - debit
+    ledger_filter = Q(
+        ledger_lines__entry__status=ENTRY_STATUS_POSTED,
+        ledger_lines__entry__is_deleted=False,
+        ledger_lines__is_deleted=False,
+    )
+    balance_expr = Case(
+        When(
+            account_type__in=[ACCOUNT_TYPE_ASSET, ACCOUNT_TYPE_EXPENSE],
+            then=F("ledger_lines__debit") - F("ledger_lines__credit"),
+        ),
+        default=F("ledger_lines__credit") - F("ledger_lines__debit"),
+    )
     qs = qs.annotate(
         balance=Coalesce(
-            Sum(
-                F("ledger_lines__debit") - F("ledger_lines__credit"),
-                filter=Q(
-                    ledger_lines__entry__status=ENTRY_STATUS_POSTED,
-                    ledger_lines__entry__is_deleted=False,
-                    ledger_lines__is_deleted=False,
-                ),
-            ),
+            Sum(balance_expr, filter=ledger_filter),
             Value(Decimal("0.00")),
             output_field=DecimalField(max_digits=15, decimal_places=2),
         )

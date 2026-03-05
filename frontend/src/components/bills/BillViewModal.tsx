@@ -38,14 +38,17 @@ export default function BillViewModal({
   const paidAmount = bill.paidAmount ?? 0;
   const balance = bill.amount - paidAmount;
 
-  const handleAddPaymentSubmit = (amount: number, paymentDate: string, newAttachmentNames: { name: string }[]) => {
+  const handleAddPaymentSubmit = (
+    amount: number,
+    paymentDate: string,
+    _status: "draft" | "posted"
+  ) => {
     const existingPayments = bill.payments ?? [];
     const newPayments = [...existingPayments, { id: `bp-${Date.now()}`, date: paymentDate, amount }];
     const newPaidAmount = newPayments.reduce((sum, p) => sum + p.amount, 0);
     onUpdate?.(bill.id, {
       payments: newPayments,
       paidAmount: newPaidAmount,
-      attachments: [...attachments, ...newAttachmentNames],
     });
     setAddPaymentOpen(false);
   };

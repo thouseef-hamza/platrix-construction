@@ -53,7 +53,7 @@ const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   employee_paid: "Employee",
 };
 
-function buildCreatePayload(data: Omit<Expense, "id"> & { expenseAccountId?: number }): CreateExpensePayload {
+function buildCreatePayload(data: Omit<Expense, "id">): CreateExpensePayload {
   return {
     category: data.category,
     description: data.description ?? "—",
@@ -114,6 +114,7 @@ export default function ExpensesList() {
     mutationFn: createExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const updateMutation = useMutation({
@@ -127,6 +128,7 @@ export default function ExpensesList() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(id)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const addPaymentMutation = useMutation({
@@ -140,6 +142,7 @@ export default function ExpensesList() {
     onSuccess: (_, { expenseId }) => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const patchPaymentMutation = useMutation({
@@ -155,6 +158,7 @@ export default function ExpensesList() {
     onSuccess: (_, { expenseId }) => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const deletePaymentMutation = useMutation({
@@ -163,6 +167,7 @@ export default function ExpensesList() {
     onSuccess: (_, { expenseId }) => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
 

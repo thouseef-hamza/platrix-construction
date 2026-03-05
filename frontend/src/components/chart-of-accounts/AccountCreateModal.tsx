@@ -54,6 +54,7 @@ export default function AccountCreateModal({
       type,
       parentId: parentId ? Number(parentId) : null,
       isActive,
+      balance: 0,
     });
     resetForm();
     onClose();

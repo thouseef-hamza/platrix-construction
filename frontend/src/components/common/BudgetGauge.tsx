@@ -180,7 +180,7 @@ export default function BudgetGauge({
       </div>
 
       <div className="flex shrink-0 items-center justify-center gap-5 px-6 py-3.5 sm:gap-8 sm:py-5">
-        {stats.map((stat, index) => (
+        {stats.filter((s): s is BudgetGaugeStat => s != null).map((stat, index) => (
           <React.Fragment key={stat.label}>
             {index > 0 && <div className="w-px bg-gray-200 h-7 dark:bg-gray-800" />}
             <div>

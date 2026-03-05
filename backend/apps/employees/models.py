@@ -9,6 +9,8 @@ from .constants import (
     EMPLOYMENT_TYPE_CHOICES,
     GENDER_CHOICES,
     MARITAL_STATUS_CHOICES,
+    PAYMENT_METHOD_CHOICES,
+    SALARY_ENTRY_STATUS_CHOICES,
     SPONSORSHIP_CHOICES,
 )
 
@@ -113,6 +115,16 @@ class EmployeeSalaryEntry(BaseModel):
         max_length=255,
         blank=True,
         help_text="e.g. Advance, Remaining amount, Bonus, Adjustment",
+    )
+    payment_method = models.IntegerField(
+        choices=PAYMENT_METHOD_CHOICES,
+        default=0,
+        db_index=True,
+    )
+    status = models.IntegerField(
+        choices=SALARY_ENTRY_STATUS_CHOICES,
+        default=0,
+        db_index=True,
     )
 
     class Meta:

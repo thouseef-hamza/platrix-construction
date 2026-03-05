@@ -59,7 +59,6 @@ export default function InvoiceCreateModal({
   const [description, setDescription] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank">("bank");
   const [paidAmount, setPaidAmount] = useState("");
-  const [status, setStatus] = useState<"draft" | "posted">("draft");
   const [errors, setErrors] = useState<{ party?: string; date?: string; amount?: string; paidAmount?: string }>({});
 
   const isEditMode = Boolean(invoiceToEdit && invoiceToEdit.status === "draft" && onUpdate);
@@ -76,7 +75,6 @@ export default function InvoiceCreateModal({
       setDescription(invoiceToEdit.description ?? "");
       setPaymentMethod(invoiceToEdit.paymentMethod ?? "bank");
       setPaidAmount(String(invoiceToEdit.paidAmount ?? ""));
-      setStatus(invoiceToEdit.status ?? "draft");
     } else {
       setPartyId("");
       setProjectId("");
@@ -86,7 +84,6 @@ export default function InvoiceCreateModal({
       setDescription("");
       setPaymentMethod("bank");
       setPaidAmount("");
-      setStatus("draft");
     }
   }, [isOpen, invoiceToEdit]);
 
@@ -94,8 +91,7 @@ export default function InvoiceCreateModal({
   const paidNum = parseFloat(paidAmount) || 0;
   const balance = amountNum - paidNum;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (status: "draft" | "posted") => {
     const newErrors: typeof errors = {};
     if (!partyId?.trim()) newErrors.party = "Party is required.";
     if (!date?.trim()) newErrors.date = "Date is required.";
@@ -140,7 +136,7 @@ export default function InvoiceCreateModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
-      <form onSubmit={handleSubmit} className="p-6 sm:p-8">
+      <form onSubmit={(e) => { e.preventDefault(); handleSubmit("draft"); }} className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{isEditMode ? `Edit ${title}` : title}</h2>
         <div className="space-y-4">
           <div>
@@ -252,24 +248,16 @@ export default function InvoiceCreateModal({
               )}
             </div>
           </div>
-          <div>
-            <Label>Status</Label>
-            <select
-              className={selectClass}
-              value={status}
-              onChange={(e) => setStatus(e.target.value as "draft" | "posted")}
-            >
-              <option value="draft">Draft</option>
-              <option value="posted">Posted</option>
-            </select>
-          </div>
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" onClick={onClose} className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
             Cancel
           </button>
-          <button type="submit" className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
-            {isEditMode ? "Save" : "Create"}
+          <button type="button" onClick={() => handleSubmit("draft")} className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+            Draft
+          </button>
+          <button type="button" onClick={() => handleSubmit("posted")} className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
+            Post
           </button>
         </div>
       </form>

@@ -61,7 +61,7 @@ export default function BillsList() {
   });
 
   const projectOptions: ProjectOption[] = useMemo(
-    () => projectsRaw.map((p) => ({ id: String(p.id), name: p.name })),
+    () => projectsRaw.map((p) => ({ id: String(p.id), name: p.projectName })),
     [projectsRaw]
   );
 
@@ -99,6 +99,7 @@ export default function BillsList() {
     mutationFn: createInvoice,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
 
@@ -108,6 +109,7 @@ export default function BillsList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["invoice", invoiceToEdit?.id] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
       setInvoiceToEdit(null);
       setCreateOpen(false);
     },

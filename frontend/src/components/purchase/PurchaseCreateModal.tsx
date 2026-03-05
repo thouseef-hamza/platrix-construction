@@ -212,10 +212,10 @@ export default function PurchaseCreateModal({
         const rate = parseFloat(r.rate) || 0;
         return {
           id: r.id,
-          materialId: mat.id,
+          materialId: String(mat.id),
           materialName: mat.name,
           materialCode: mat.code,
-          unit: mat.unit,
+          unit: mat.unitDisplay,
           quantity: qty,
           rate,
           amount: qty * rate,
