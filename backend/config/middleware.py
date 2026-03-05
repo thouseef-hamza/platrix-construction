@@ -7,6 +7,18 @@ Views must validate that the user has access to this account (e.g. via user_acco
 from django.http import JsonResponse
 
 
+def csrf_exempt_api_middleware(get_response):
+    """
+    Exempt /api/ from CSRF checks. The API uses JWT auth, not session cookies, so CSRF is not applicable.
+    Must run before CsrfViewMiddleware.
+    """
+    def middleware(request):
+        if request.path.startswith("/api/"):
+            request._dont_enforce_csrf_checks = True
+        return get_response(request)
+    return middleware
+
+
 def _require_account_id(request):
     """Return True if this request must have x-account-id (API but not auth)."""
     path = (request.path or "").strip("/")
