@@ -60,6 +60,15 @@ class Expense(BaseModel):
         db_index=True,
         default=EXPENSE_CATEGORY_GENERAL,
     )
+    # For general expense: which expense COA to debit (default 5000). Excludes 5010, 5050, 5060.
+    expense_account = models.ForeignKey(
+        "accounting.ChartOfAccount",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="general_expenses",
+        db_index=True,
+    )
     description = models.TextField(blank=True)
     amount = models.DecimalField(
         max_digits=14,

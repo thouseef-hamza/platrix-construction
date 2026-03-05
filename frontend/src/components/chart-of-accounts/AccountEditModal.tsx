@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import type { Account, AccountType } from "@/types/chartOfAccounts";
@@ -17,58 +17,67 @@ const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
   { value: "expense", label: "Expense" },
 ];
 
-interface AccountCreateModalProps {
+interface AccountEditModalProps {
+  account: Account | null;
+  accounts: Account[];
   isOpen: boolean;
   onClose: () => void;
-  accounts: Account[];
-  onCreate: (data: Omit<Account, "id">) => void;
+  onSave: (id: number, data: { code: string; name: string; type: AccountType; parentId: number | null; isActive: boolean }) => void;
   isSubmitting?: boolean;
 }
 
-export default function AccountCreateModal({
+export default function AccountEditModal({
+  account,
+  accounts,
   isOpen,
   onClose,
-  accounts,
-  onCreate,
+  onSave,
   isSubmitting = false,
-}: AccountCreateModalProps) {
+}: AccountEditModalProps) {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("asset");
   const [parentId, setParentId] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  const resetForm = () => {
-    setCode("");
-    setName("");
-    setType("asset");
-    setParentId("");
-    setIsActive(true);
-  };
+  useEffect(() => {
+    if (account) {
+      setCode(account.code);
+      setName(account.name);
+      setType(account.type);
+      setParentId(account.parentId != null ? String(account.parentId) : "");
+      setIsActive(account.isActive);
+    }
+  }, [account, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onCreate({
+    if (!account) return;
+    onSave(account.id, {
       code: code.trim(),
       name: name.trim(),
       type,
       parentId: parentId ? Number(parentId) : null,
       isActive,
     });
-    resetForm();
     onClose();
   };
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
+  if (!account) return null;
+
+  const parentOptions = accounts
+    .filter((a) => a.type === type && a.id !== account.id)
+    .map((a) => (
+      <option key={a.id} value={a.id}>
+        {a.code} – {a.name}
+      </option>
+    ));
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[95vw] w-full mx-4">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4">
       <form onSubmit={handleSubmit} className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Add Account
+          Edit Account
         </h2>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -120,30 +129,24 @@ export default function AccountCreateModal({
               onChange={(e) => setParentId(e.target.value)}
             >
               <option value="">None</option>
-              {accounts
-                .filter((a) => a.type === type)
-                .map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.code} – {a.name}
-                  </option>
-                ))}
+              {parentOptions}
             </select>
           </div>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="account-active"
+              id="account-edit-active"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-800"
             />
-            <Label htmlFor="account-active" className="mb-0">Active</Label>
+            <Label htmlFor="account-edit-active" className="mb-0">Active</Label>
           </div>
         </div>
         <div className="mt-8 flex justify-end gap-3">
           <button
             type="button"
-            onClick={handleClose}
+            onClick={onClose}
             className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Cancel
@@ -153,7 +156,7 @@ export default function AccountCreateModal({
             disabled={isSubmitting}
             className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
           >
-            {isSubmitting ? "Creating…" : "Create"}
+            {isSubmitting ? "Saving…" : "Save"}
           </button>
         </div>
       </form>

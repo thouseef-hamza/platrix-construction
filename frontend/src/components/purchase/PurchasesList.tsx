@@ -23,8 +23,11 @@ import {
   getPurchase,
   createPurchase,
   updatePurchase,
+  deletePurchase,
   addPurchasePayment,
   patchPurchasePayment,
+  deletePurchasePayment,
+  type PatchPurchasePaymentPayload,
 } from "@/lib/purchasesApi";
 import PurchaseViewModal from "./PurchaseViewModal";
 import PurchaseCreateModal from "./PurchaseCreateModal";
@@ -67,9 +70,16 @@ export default function PurchasesList() {
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updatePurchase>[1] }) =>
       updatePurchase(id, payload),
-    onSuccess: (_, { id }) => {
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(["purchase", String(id)], data);
+      queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY], refetchType: "active" });
+      queryClient.invalidateQueries({ queryKey: ["purchase", String(id)], refetchType: "active" });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deletePurchase(id),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: ["purchase", String(id)] });
     },
   });
   const addPaymentMutation = useMutation({
@@ -93,8 +103,16 @@ export default function PurchasesList() {
     }: {
       purchaseId: number;
       paymentId: number;
-      payload: { status: "draft" | "posted" };
+      payload: PatchPurchasePaymentPayload;
     }) => patchPurchasePayment(purchaseId, paymentId, payload),
+    onSuccess: (_, { purchaseId }) => {
+      queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["purchase", String(purchaseId)] });
+    },
+  });
+  const deletePaymentMutation = useMutation({
+    mutationFn: ({ purchaseId, paymentId }: { purchaseId: number; paymentId: number }) =>
+      deletePurchasePayment(purchaseId, paymentId),
     onSuccess: (_, { purchaseId }) => {
       queryClient.invalidateQueries({ queryKey: [PURCHASES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["purchase", String(purchaseId)] });
@@ -115,6 +133,7 @@ export default function PurchasesList() {
   const [selected, setSelected] = useState<Purchase | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [purchaseToEdit, setPurchaseToEdit] = useState<Purchase | null>(null);
 
   const { data: selectedDetail } = useQuery({
     queryKey: ["purchase", selected?.id],
@@ -392,14 +411,70 @@ export default function PurchasesList() {
             payload: { status: "posted" },
           })
         }
+        onEditPayment={(purchaseId, paymentId, payload) =>
+          patchPaymentMutation.mutate({
+            purchaseId: Number(purchaseId),
+            paymentId: Number(paymentId),
+            payload: { date: payload.date, amount: payload.amount, reference: payload.reference ?? "" },
+          })
+        }
+        onDeletePayment={(purchaseId, paymentId) =>
+          deletePaymentMutation.mutate({ purchaseId: Number(purchaseId), paymentId: Number(paymentId) })
+        }
+        onEdit={(p) => {
+          setViewOpen(false);
+          setSelected(null);
+          getPurchase(Number(p.id)).then((full) => {
+            setPurchaseToEdit(full ?? p);
+            setCreateOpen(true);
+          });
+        }}
+        onDelete={(id) => {
+          deleteMutation.mutate(Number(id), {
+            onSuccess: () => {
+              setViewOpen(false);
+              setSelected(null);
+            },
+          });
+        }}
       />
       <PurchaseCreateModal
         isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setPurchaseToEdit(null);
+        }}
         suppliers={suppliers}
         projects={projectRefs}
         materials={materials}
-        isSubmitting={createMutation.isPending}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
+        purchaseToEdit={purchaseToEdit}
+        onUpdate={
+          purchaseToEdit
+            ? (id, payload) =>
+                updateMutation.mutate(
+                  {
+                    id: Number(id),
+                    payload: {
+                      reference: payload.reference,
+                      date: payload.date,
+                      payment_method: payload.payment_method,
+                      description: payload.description ?? "",
+                      project: payload.project,
+                      line_items: payload.line_items,
+                      status: payload.status,
+                      paid_amount: payload.paid_amount,
+                    },
+                  },
+                  {
+                    onSuccess: () => {
+                      setCreateOpen(false);
+                      setPurchaseToEdit(null);
+                    },
+                  }
+                )
+            : undefined
+        }
         onCreate={(data) => {
           createMutation.mutate(
             {
@@ -415,8 +490,7 @@ export default function PurchasesList() {
                 rate: l.rate,
               })),
               description: data.description,
-              ...(data.paidAmount != null &&
-                data.paidAmount > 0 && { paid_amount: data.paidAmount }),
+              ...(data.paidAmount != null && { paid_amount: data.paidAmount }),
             },
             {
               onSuccess: () => setCreateOpen(false),

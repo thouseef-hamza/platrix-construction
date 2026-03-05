@@ -127,6 +127,9 @@ class ChartOfAccountDetailView(APIView):
 
     def put(self, request, pk):
         obj = self.get_object(pk)
+        if obj.is_system:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("System-generated accounts cannot be edited.")
         serializer = ChartOfAccountWriteSerializer(obj, data=request.data, partial=False)
         serializer.is_valid(raise_exception=True)
         if serializer.instance.account_id not in user_account_ids(request):
@@ -137,6 +140,9 @@ class ChartOfAccountDetailView(APIView):
 
     def patch(self, request, pk):
         obj = self.get_object(pk)
+        if obj.is_system:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("System-generated accounts cannot be edited.")
         serializer = ChartOfAccountWriteSerializer(obj, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         if serializer.instance.account_id not in user_account_ids(request):
@@ -147,6 +153,9 @@ class ChartOfAccountDetailView(APIView):
 
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        if obj.is_system:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("System-generated accounts cannot be deleted.")
         if obj.account_id not in user_account_ids(request):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have access to this account.")

@@ -142,7 +142,7 @@ function apiPurchaseToPurchase(api: ApiPurchase): Purchase {
     amount: parseFloat(api.amount) || 0,
     description: api.description || undefined,
     paidAt: api.paid_at ?? undefined,
-    paidAmount: parseFloat(api.paid_amount) || undefined,
+    paidAmount: api.paid_amount != null && api.paid_amount !== "" ? parseFloat(api.paid_amount) : undefined,
     paymentStatus: BACKEND_TO_PAYMENT_STATUS[api.payment_status] ?? "not_completed",
     payments,
   };
@@ -200,7 +200,10 @@ export interface UpdatePurchasePayload {
   status?: PurchaseStatus;
   payment_method?: PurchasePaymentMethod;
   description?: string;
+  project?: number | null;
   line_items?: { material: number; quantity: number; rate: number }[];
+  /** When posting (status=posted), create a payment line for this amount. */
+  paid_amount?: number;
 }
 
 export async function updatePurchase(
@@ -222,8 +225,16 @@ export async function updatePurchase(
       quantity: String(l.quantity),
       rate: String(l.rate),
     }));
+  if (payload.paid_amount != null)
+    body.paid_amount = String(payload.paid_amount);
+  if (payload.project !== undefined)
+    body.project = payload.project;
   const { data } = await api.patch<ApiPurchase>(`/purchases/${id}/`, body);
   return apiPurchaseToPurchase(data);
+}
+
+export async function deletePurchase(id: number): Promise<void> {
+  await api.delete(`/purchases/${id}/`);
 }
 
 export interface AddPurchasePaymentPayload {
@@ -247,15 +258,32 @@ export async function addPurchasePayment(
   await api.post(`/purchases/${purchaseId}/payments/`, body);
 }
 
+export interface PatchPurchasePaymentPayload {
+  status?: "draft" | "posted";
+  date?: string;
+  amount?: number;
+  reference?: string;
+}
+
 export async function patchPurchasePayment(
   purchaseId: number,
   paymentId: number,
-  payload: { status?: "draft" | "posted" }
+  payload: PatchPurchasePaymentPayload
 ): Promise<void> {
   const body: Record<string, unknown> = {};
   if (payload.status !== undefined)
     body.status = PAYMENT_LEDGER_TO_BACKEND[payload.status];
+  if (payload.date !== undefined) body.date = payload.date;
+  if (payload.amount !== undefined) body.amount = String(payload.amount);
+  if (payload.reference !== undefined) body.reference = payload.reference?.trim() ?? "";
   await api.patch(`/purchases/${purchaseId}/payments/${paymentId}/`, body);
+}
+
+export async function deletePurchasePayment(
+  purchaseId: number,
+  paymentId: number
+): Promise<void> {
+  await api.delete(`/purchases/${purchaseId}/payments/${paymentId}/`);
 }
 
 // --- Purchase documents (list, upload, download, delete) ---

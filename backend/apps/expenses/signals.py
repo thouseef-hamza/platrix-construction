@@ -22,7 +22,9 @@ from .constants import (
     COA_CODE_CASH_BANK,
     COA_CODE_OTHER_EXPENSE,
     COA_CODE_PROJECT_EXPENSE,
+    EXPENSE_CATEGORY_GENERAL,
     EXPENSE_STATUS_POSTED,
+    GENERAL_EXPENSE_DEFAULT_COA_CODE,
     PAYMENT_LEDGER_POSTED,
 )
 from .models import Expense, ExpensePayment
@@ -51,8 +53,16 @@ def on_expense_posted_create_ledger_entry(sender, instance, created, **kwargs):
     paid = instance.paid_amount or Decimal("0.00")
     balance = amount - paid
 
-    expense_code = COA_CODE_PROJECT_EXPENSE if instance.project_id else COA_CODE_OTHER_EXPENSE
-    expense_coa = _get_coa_by_code(instance.account, expense_code)
+    if instance.category == EXPENSE_CATEGORY_GENERAL:
+        expense_coa = (
+            instance.expense_account
+            if instance.expense_account_id
+            else _get_coa_by_code(instance.account, GENERAL_EXPENSE_DEFAULT_COA_CODE)
+        )
+    elif instance.project_id:
+        expense_coa = _get_coa_by_code(instance.account, COA_CODE_PROJECT_EXPENSE)
+    else:
+        expense_coa = _get_coa_by_code(instance.account, COA_CODE_OTHER_EXPENSE)
     cash_coa = _get_coa_by_code(instance.account, COA_CODE_CASH_BANK)
     ap_coa = _get_coa_by_code(instance.account, COA_CODE_ACCOUNTS_PAYABLE)
 

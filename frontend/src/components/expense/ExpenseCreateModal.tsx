@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
 import ConfirmPostModal from "@/components/purchase/ConfirmPostModal";
 import Label from "@/components/form/Label";
 import DatePicker from "@/components/form/date-picker";
 import type { Expense, ExpenseCategory, ProjectRef, EmployeeRef } from "@/types/expense";
+import { fetchExpenseAccountsForGeneral, updateExpense } from "@/lib/expensesApi";
 import { formatCurrency } from "@/utils/format";
 
 const inputClass =
@@ -26,6 +28,9 @@ interface ExpenseCreateModalProps {
   employees: EmployeeRef[];
   isSubmitting?: boolean;
   onCreate: (data: Omit<Expense, "id">) => void;
+  /** When set, modal works in edit mode (prefill and call onUpdate on submit). */
+  expenseToEdit?: Expense | null;
+  onUpdate?: (id: string, payload: Parameters<typeof updateExpense>[1]) => void;
 }
 
 export default function ExpenseCreateModal({
@@ -35,8 +40,11 @@ export default function ExpenseCreateModal({
   employees,
   isSubmitting = false,
   onCreate,
+  expenseToEdit,
+  onUpdate,
 }: ExpenseCreateModalProps) {
   const [category, setCategory] = useState<ExpenseCategory>("general");
+  const [expenseAccountId, setExpenseAccountId] = useState<string>("");
   const [projectId, setProjectId] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -57,9 +65,43 @@ export default function ExpenseCreateModal({
     employee?: string;
     quantity?: string;
     rate?: string;
+    paidAmount?: string;
   }>({});
   const formRef = useRef<HTMLFormElement>(null);
   const submitActionRef = useRef<"draft" | "posted">("draft");
+  const isEditMode = Boolean(expenseToEdit && onUpdate);
+
+  useEffect(() => {
+    if (isOpen && expenseToEdit) {
+      setCategory(expenseToEdit.category);
+      setProjectId(expenseToEdit.project?.id ?? "");
+      setDescription(expenseToEdit.description ?? "");
+      setAmount(String(expenseToEdit.amount ?? ""));
+      setDate(expenseToEdit.date?.slice(0, 10) ?? "");
+      setLaborType(expenseToEdit.laborType ?? "hourly");
+      setQuantity(String(expenseToEdit.quantity ?? ""));
+      setRate(String(expenseToEdit.rate ?? ""));
+      setEmployeeId(expenseToEdit.employeeRef?.id ?? "");
+      setPaymentMethod(expenseToEdit.paymentMethod ?? "cash");
+      setPaidAmount("");
+      if (expenseToEdit.category === "general" && expenseToEdit.expenseAccountId != null) {
+        setExpenseAccountId(String(expenseToEdit.expenseAccountId));
+      }
+    }
+  }, [isOpen, expenseToEdit]);
+
+  const { data: expenseAccounts = [] } = useQuery({
+    queryKey: ["expense-accounts-for-general"],
+    queryFn: () => fetchExpenseAccountsForGeneral(),
+    enabled: isOpen,
+  });
+  const defaultExpenseAccount = expenseAccounts.find((a) => a.code === "5000");
+  useEffect(() => {
+    if (isOpen && category === "general" && expenseAccounts.length > 0) {
+      const defaultId = defaultExpenseAccount?.id ?? expenseAccounts[0]?.id;
+      setExpenseAccountId(defaultId != null ? String(defaultId) : "");
+    }
+  }, [isOpen, category, expenseAccounts.length, defaultExpenseAccount?.id]);
 
   const isProject = category === "project";
   const isLabor = category === "outsourced_labor";
@@ -95,12 +137,17 @@ export default function ExpenseCreateModal({
       if (q <= 0) newErrors.quantity = "Quantity must be greater than 0.";
       if (r <= 0) newErrors.rate = "Rate must be greater than 0.";
     }
+    const paidAmountNum = parseFloat(paidAmount) || 0;
+    if (paidAmountNum > totalAmount) {
+      newErrors.paidAmount = "Paid amount cannot exceed total amount.";
+    }
     const valid = Object.keys(newErrors).length === 0;
     return { valid, newErrors };
-  }, [description, date, projectId, employeeId, amount, quantity, rate, isProject, isLabor, isEmployeePaid]);
+  }, [description, date, projectId, employeeId, amount, quantity, rate, paidAmount, totalAmount, isProject, isLabor, isEmployeePaid]);
 
   const resetForm = () => {
     setCategory("general");
+    setExpenseAccountId("");
     setProjectId("");
     setDescription("");
     setAmount("");
@@ -128,6 +175,33 @@ export default function ExpenseCreateModal({
       ? Array.from(files).map((f) => ({ name: f.name }))
       : undefined;
 
+    if (isEditMode && expenseToEdit && onUpdate) {
+      const amt = isLabor ? laborAmount : parseFloat(amount) || 0;
+      const employee = employees.find((emp) => emp.id === employeeId) ?? null;
+      const status = submitActionRef.current;
+      const paidAmountNum = parseFloat(paidAmount) || 0;
+      onUpdate(expenseToEdit.id, {
+        reference: (description.trim() || (expenseToEdit as Expense & { reference?: string }).reference) ?? "",
+        date: date || new Date().toISOString().slice(0, 10),
+        category,
+        description: description.trim() || "—",
+        amount: amt,
+        labor_type: isLabor ? (laborType === "hourly" ? 0 : 1) : undefined,
+        quantity: isLabor ? parseFloat(quantity) || null : undefined,
+        rate: isLabor ? parseFloat(rate) || null : undefined,
+        employee_id: isEmployeePaid ? ((employeeId || employee?.id) ?? "") : undefined,
+        employee_name: isEmployeePaid ? (employee?.name ?? "") : undefined,
+        payment_method: paymentMethod,
+        project: projectId ? Number(projectId) : null,
+        expense_account: category === "general" && expenseAccountId ? Number(expenseAccountId) : undefined,
+        status,
+        paid_amount: status === "posted" && paidAmountNum > 0 ? paidAmountNum : undefined,
+      });
+      resetForm();
+      onClose();
+      return;
+    }
+
     if (isLabor) {
       const q = parseFloat(quantity) || 0;
       const r = parseFloat(rate) || 0;
@@ -143,7 +217,7 @@ export default function ExpenseCreateModal({
         project: project ?? undefined,
         attachments,
         paymentMethod,
-        paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
+        paidAmount: status === "posted" && paidAmountNum > 0 ? paidAmountNum : undefined,
         status,
       });
     } else if (isEmployeePaid) {
@@ -159,7 +233,7 @@ export default function ExpenseCreateModal({
         employeeRef: employee,
         project: project ?? undefined,
         paymentMethod,
-        paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
+        paidAmount: status === "posted" && paidAmountNum > 0 ? paidAmountNum : undefined,
         attachments,
         status,
       });
@@ -174,8 +248,9 @@ export default function ExpenseCreateModal({
         project: isProject ? project ?? undefined : undefined,
         attachments,
         paymentMethod,
-        paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
+        paidAmount: status === "posted" && paidAmountNum > 0 ? paidAmountNum : undefined,
         status,
+        expenseAccountId: category === "general" && expenseAccountId ? Number(expenseAccountId) : undefined,
       });
     }
     resetForm();
@@ -192,22 +267,41 @@ export default function ExpenseCreateModal({
     <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
       <form ref={formRef} onSubmit={handleSubmit} className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Add Expense
+          {isEditMode ? "Edit Expense" : "Add Expense"}
         </h2>
         <div className="space-y-4">
-          <div>
-            <Label>Expense type</Label>
-            <select
-              className={selectClass}
-              value={category}
-              onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
-            >
-              {CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+          <div className={`grid gap-4 ${category === "general" ? "grid-cols-2" : "grid-cols-1"}`}>
+            <div>
+              <Label>Expense type</Label>
+              <select
+                className={selectClass}
+                value={category}
+                onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
+              >
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {category === "general" && (
+              <div>
+                <Label>Expense account</Label>
+                <select
+                  className={selectClass}
+                  value={expenseAccountId}
+                  onChange={(e) => setExpenseAccountId(e.target.value)}
+                >
+                  <option value="">Default (5000 – Expense)</option>
+                  {expenseAccounts.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.code} – {acc.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {isProject && (
@@ -411,6 +505,9 @@ export default function ExpenseCreateModal({
                 onChange={(e) => setPaidAmount(e.target.value)}
                 placeholder="0"
               />
+              {errors.paidAmount && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.paidAmount}</p>
+              )}
             </div>
           </div>
 

@@ -100,8 +100,22 @@ export interface ApiExpense {
   paid_amount: string;
   paid_at: string | null;
   payments?: ApiExpensePayment[];
+  expense_account_id: number | null;
+  expense_account_code: string | null;
+  expense_account_name: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ExpenseAccountOption {
+  id: number;
+  code: string;
+  name: string;
+}
+
+export async function fetchExpenseAccountsForGeneral(): Promise<ExpenseAccountOption[]> {
+  const { data } = await api.get<ExpenseAccountOption[]>("/expenses/expense-accounts/");
+  return data ?? [];
 }
 
 function apiExpenseToExpense(api: ApiExpense): Expense {
@@ -124,6 +138,9 @@ function apiExpenseToExpense(api: ApiExpense): Expense {
   return {
     id: String(api.id),
     category: BACKEND_TO_CATEGORY[api.category] ?? "general",
+    expenseAccountId: api.expense_account_id ?? undefined,
+    expenseAccountCode: api.expense_account_code ?? undefined,
+    expenseAccountName: api.expense_account_name ?? undefined,
     description: api.description || "",
     amount: parseFloat(api.amount) || 0,
     date: api.date,
@@ -169,6 +186,8 @@ export interface CreateExpensePayload {
   paid_amount?: number;
   status: number;
   reference?: string;
+  /** For general expense: COA id (default 5000 if null). */
+  expense_account?: number | null;
 }
 
 export async function createExpense(payload: CreateExpensePayload): Promise<Expense> {
@@ -190,6 +209,9 @@ export async function createExpense(payload: CreateExpensePayload): Promise<Expe
   if (payload.paid_amount != null && payload.paid_amount > 0) {
     body.paid_amount = String(payload.paid_amount);
   }
+  if (payload.expense_account != null && payload.category === "general") {
+    body.expense_account = payload.expense_account;
+  }
   const { data } = await api.post<ApiExpense>("/expenses/", body);
   return apiExpenseToExpense(data);
 }
@@ -208,6 +230,9 @@ export interface UpdateExpensePayload {
   employee_name?: string;
   payment_method?: "cash" | "bank";
   project?: number | null;
+  expense_account?: number | null;
+  /** When posting (status=posted), create a payment line for this amount. */
+  paid_amount?: number;
 }
 
 export async function updateExpense(
@@ -228,6 +253,9 @@ export async function updateExpense(
   if (payload.employee_name !== undefined) body.employee_name = payload.employee_name;
   if (payload.payment_method !== undefined) body.payment_method = PAYMENT_METHOD_TO_BACKEND[payload.payment_method];
   if (payload.project !== undefined) body.project = payload.project;
+  if (payload.expense_account !== undefined) body.expense_account = payload.expense_account;
+  if (payload.paid_amount != null && payload.paid_amount > 0)
+    body.paid_amount = String(payload.paid_amount);
   const { data } = await api.patch<ApiExpense>(`/expenses/${id}/`, body);
   return apiExpenseToExpense(data);
 }
@@ -262,4 +290,69 @@ export async function patchExpensePayment(
   if (payload.status !== undefined)
     body.status = PAYMENT_LEDGER_TO_BACKEND[payload.status];
   await api.patch(`/expenses/${expenseId}/payments/${paymentId}/`, body);
+}
+
+// --- Expense documents (list, upload, download, delete) ---
+
+export interface ExpenseDocument {
+  id: number;
+  name: string;
+  filename: string;
+  file_url: string | null;
+  size: number | null;
+  description: string;
+  created_at: string;
+}
+
+export async function fetchExpenseDocuments(
+  expenseId: number
+): Promise<ExpenseDocument[]> {
+  const { data } = await api.get<ExpenseDocument[]>(
+    `/expenses/${expenseId}/documents/`
+  );
+  return data ?? [];
+}
+
+export async function uploadExpenseDocument(
+  expenseId: number,
+  file: File,
+  options?: { name?: string; description?: string }
+): Promise<ExpenseDocument> {
+  const form = new FormData();
+  form.append("file", file);
+  if (options?.name) form.append("name", options.name);
+  if (options?.description) form.append("description", options.description ?? "");
+  const { data } = await api.post<ExpenseDocument>(
+    `/expenses/${expenseId}/documents/`,
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return data;
+}
+
+export async function deleteExpenseDocument(
+  expenseId: number,
+  documentId: number
+): Promise<void> {
+  await api.delete(`/expenses/${expenseId}/documents/${documentId}/`);
+}
+
+export async function downloadExpenseDocument(
+  expenseId: number,
+  documentId: number,
+  filename: string
+): Promise<void> {
+  const { data } = await api.get<Blob>(
+    `/expenses/${expenseId}/documents/${documentId}/download/`,
+    { responseType: "blob" }
+  );
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "document";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

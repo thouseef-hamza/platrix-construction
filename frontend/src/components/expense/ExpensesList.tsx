@@ -52,7 +52,7 @@ const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   employee_paid: "Employee",
 };
 
-function buildCreatePayload(data: Omit<Expense, "id">): CreateExpensePayload {
+function buildCreatePayload(data: Omit<Expense, "id"> & { expenseAccountId?: number }): CreateExpensePayload {
   return {
     category: data.category,
     description: data.description ?? "—",
@@ -68,6 +68,7 @@ function buildCreatePayload(data: Omit<Expense, "id">): CreateExpensePayload {
     payment_method: PAYMENT_METHOD_TO_BACKEND[data.paymentMethod ?? "cash"],
     paid_amount: data.paidAmount ?? 0,
     status: STATUS_TO_BACKEND[data.status ?? "posted"],
+    expense_account: data.category === "general" ? (data.expenseAccountId ?? null) : undefined,
   };
 }
 
@@ -99,6 +100,7 @@ export default function ExpensesList() {
   const [selected, setSelected] = useState<Expense | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
 
   const { data: selectedDetail } = useQuery({
     queryKey: ["expense", selected?.id],
@@ -437,13 +439,37 @@ export default function ExpensesList() {
             payload: { status: "posted" },
           })
         }
+        onEdit={(exp) => {
+          setExpenseToEdit(exp);
+          setViewOpen(false);
+          setSelected(null);
+          setCreateOpen(true);
+        }}
       />
       <ExpenseCreateModal
         isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setExpenseToEdit(null);
+        }}
         projects={projectRefs}
         employees={employeeRefs}
-        isSubmitting={createMutation.isPending}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
+        expenseToEdit={expenseToEdit}
+        onUpdate={
+          expenseToEdit
+            ? (id, payload) =>
+                updateMutation.mutate(
+                  { id: Number(id), payload },
+                  {
+                    onSuccess: () => {
+                      setCreateOpen(false);
+                      setExpenseToEdit(null);
+                    },
+                  }
+                )
+            : undefined
+        }
         onCreate={(data) => {
           createMutation.mutate(buildCreatePayload(data), {
             onSuccess: () => setCreateOpen(false),

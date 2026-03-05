@@ -14,6 +14,8 @@ export interface Account {
   /** Balance from ledger: sum(debit - credit) for posted entries. Positive = debit balance, negative = credit balance. */
   balance: number;
   isActive: boolean;
+  /** True if account was created from seed; cannot be edited or deleted. */
+  isSystem?: boolean;
 }
 
 export type JournalEntryStatus = "draft" | "posted";

@@ -15,6 +15,8 @@ import {
 import ConfirmPostModal from "./ConfirmPostModal";
 import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
 import MakePaymentModal from "./MakePaymentModal";
+import DatePicker from "@/components/form/date-picker";
+import Label from "@/components/form/Label";
 
 interface PurchaseViewModalProps {
   purchase: Purchase | null;
@@ -23,9 +25,118 @@ interface PurchaseViewModalProps {
   onUpdate?: (id: string, updates: Partial<Purchase>) => void;
   /** Post a draft payment to the ledger. */
   onPostPayment?: (purchaseId: string, paymentId: string) => void;
+  /** Edit a draft payment (date, amount, reference). */
+  onEditPayment?: (purchaseId: string, paymentId: string, payload: { date: string; amount: number; reference?: string }) => void;
+  /** Delete a draft payment. */
+  onDeletePayment?: (purchaseId: string, paymentId: string) => void;
+  /** Edit draft purchase (opens edit flow). */
+  onEdit?: (purchase: Purchase) => void;
+  /** Delete draft purchase. */
+  onDelete?: (purchaseId: string) => void;
 }
 
 type Tab = "details" | "payments" | "documents" | "activity";
+
+const inputClass =
+  "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
+
+function EditPaymentModal({
+  isOpen,
+  onClose,
+  initialDate,
+  initialAmount,
+  initialReference,
+  maxAmount,
+  onSubmit,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  initialDate: string;
+  initialAmount: number;
+  initialReference: string;
+  maxAmount: number;
+  onSubmit: (date: string, amount: number, reference: string) => void;
+}) {
+  const [date, setDate] = useState(initialDate?.slice(0, 10) ?? "");
+  const [amount, setAmount] = useState(String(initialAmount ?? ""));
+  const [reference, setReference] = useState(initialReference ?? "");
+  const [amountError, setAmountError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setDate(initialDate?.slice(0, 10) ?? "");
+      setAmount(String(initialAmount ?? ""));
+      setReference(initialReference ?? "");
+      setAmountError(null);
+    }
+  }, [isOpen, initialDate, initialAmount, initialReference]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAmountError(null);
+    const amountNum = parseFloat(amount) || 0;
+    if (amountNum <= 0) {
+      setAmountError("Amount must be greater than 0.");
+      return;
+    }
+    if (amountNum > maxAmount) {
+      setAmountError("Amount cannot exceed the remaining balance for this payment.");
+      return;
+    }
+    if (!date?.trim()) return;
+    onSubmit(date.trim(), amountNum, reference.trim());
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4">
+      <form onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit payment</h2>
+        <div className="space-y-4">
+          <div>
+            <Label>Date <span className="text-red-600 dark:text-red-400">*</span></Label>
+            <DatePicker
+              id="edit-payment-date"
+              placeholder="Select date"
+              value={date}
+              onChange={(_, dateStr) => setDate(dateStr ?? "")}
+            />
+          </div>
+          <div>
+            <Label>Amount (QAR) <span className="text-red-600 dark:text-red-400">*</span></Label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className={inputClass + (amountError ? " border-red-500 dark:border-red-400" : "")}
+              value={amount}
+              onChange={(e) => { setAmount(e.target.value); setAmountError(null); }}
+              placeholder="0"
+            />
+            {amountError && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{amountError}</p>}
+          </div>
+          <div>
+            <Label>Reference (optional)</Label>
+            <input
+              type="text"
+              className={inputClass}
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder="—"
+            />
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+            Cancel
+          </button>
+          <button type="submit" className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
+            Save
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 export default function PurchaseViewModal({
   purchase,
@@ -33,10 +144,17 @@ export default function PurchaseViewModal({
   onClose,
   onUpdate,
   onPostPayment,
+  onEditPayment,
+  onDeletePayment,
+  onEdit,
+  onDelete,
 }: PurchaseViewModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [makePaymentModalOpen, setMakePaymentModalOpen] = useState(false);
+  const [paymentToEdit, setPaymentToEdit] = useState<{ id: string; date: string; amount: number; reference?: string } | null>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<{ id: string; date: string; amount: number } | null>(null);
+  const [showDeletePurchaseConfirm, setShowDeletePurchaseConfirm] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<PurchaseDocument | null>(null);
   const [previewDocument, setPreviewDocument] = useState<{ name: string; url: string | null; filename: string } | null>(null);
   const [uploadName, setUploadName] = useState("");
@@ -83,10 +201,15 @@ export default function PurchaseViewModal({
   if (!purchase) return null;
 
   const isDraft = purchase.status === "draft";
+  const paymentList = purchase.payments ?? [];
+  const postedPaid = paymentList
+    .filter((p) => (p.status ?? "draft") === "posted")
+    .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+  const balanceFromPosted = purchase.amount - postedPaid;
+  const showAddPayment = balanceFromPosted > 0 && purchase.status === "posted" && !!onUpdate;
   const paymentStatus = purchase.paymentStatus ?? (purchase.paidAmount === undefined || purchase.paidAmount === 0 ? "not_completed" : purchase.paidAmount >= purchase.amount ? "completed" : "partial");
   const currentPaid = purchase.paidAmount ?? 0;
   const balance = purchase.amount - currentPaid;
-  const showMakePayment = balance > 0;
 
   const handlePostConfirm = () => {
     onUpdate?.(purchase.id, { status: "posted" });
@@ -107,8 +230,6 @@ export default function PurchaseViewModal({
     });
     setMakePaymentModalOpen(false);
   };
-
-  const paymentList = purchase.payments ?? [];
 
   const handleDocumentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -158,9 +279,35 @@ export default function PurchaseViewModal({
     <>
       <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Purchase Details
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Purchase Details
+            </h2>
+            {isDraft && onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(purchase)}
+                title="Edit"
+                className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-gray-200"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+            )}
+            {isDraft && onDelete && (
+              <button
+                type="button"
+                onClick={() => setShowDeletePurchaseConfirm(true)}
+                title="Delete"
+                className="rounded p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
+          </div>
           <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
             {tabs.map((tab) => (
               <button
@@ -362,7 +509,7 @@ export default function PurchaseViewModal({
             <div>
               <div className="flex items-center justify-between gap-4 mb-4">
                 <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Payments</span>
-                {showMakePayment && onUpdate && purchase.status === "posted" && (
+                {showAddPayment && (
                   <button
                     type="button"
                     onClick={() => setMakePaymentModalOpen(true)}
@@ -381,8 +528,8 @@ export default function PurchaseViewModal({
                         <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Reference</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Amount (QAR)</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
-                        {onPostPayment ? (
-                          <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400 w-24">Action</th>
+                        {(onPostPayment || onEditPayment || onDeletePayment) && purchase.status === "posted" ? (
+                          <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400 w-40">Action</th>
                         ) : null}
                       </tr>
                     </thead>
@@ -403,16 +550,44 @@ export default function PurchaseViewModal({
                               {(p.status ?? "draft") === "posted" ? "Posted" : "Draft"}
                             </span>
                           </td>
-                          {onPostPayment ? (
+                          {(onPostPayment || onEditPayment || onDeletePayment) && purchase.status === "posted" ? (
                             <td className="px-4 py-3 text-right">
                               {(p.status ?? "draft") === "draft" ? (
-                                <button
-                                  type="button"
-                                  onClick={() => onPostPayment(purchase.id, p.id)}
-                                  className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                                >
-                                  Post
-                                </button>
+                                <div className="flex items-center justify-end gap-1">
+                                  {onPostPayment && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onPostPayment(purchase.id, p.id)}
+                                      className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                                    >
+                                      Post
+                                    </button>
+                                  )}
+                                  {onEditPayment && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPaymentToEdit({ id: p.id, date: p.date, amount: p.amount, reference: p.reference })}
+                                      title="Edit"
+                                      className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200"
+                                    >
+                                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                  {onDeletePayment && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPaymentToDelete({ id: p.id, date: p.date, amount: p.amount })}
+                                      title="Delete"
+                                      className="rounded p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                                    >
+                                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
                               ) : null}
                             </td>
                           ) : null}
@@ -610,6 +785,44 @@ export default function PurchaseViewModal({
         title="Delete document"
         itemName={documentToDelete?.name || documentToDelete?.filename}
       />
+      <ConfirmDeleteModal
+        isOpen={showDeletePurchaseConfirm}
+        onClose={() => setShowDeletePurchaseConfirm(false)}
+        onConfirm={() => {
+          onDelete?.(purchase.id);
+          setShowDeletePurchaseConfirm(false);
+          onClose();
+        }}
+        title="Delete purchase"
+        itemName={purchase.reference}
+        message={`Are you sure you want to delete this draft purchase (${purchase.reference})? This action cannot be undone.`}
+      />
+      {paymentToDelete && (
+        <ConfirmDeleteModal
+          isOpen={!!paymentToDelete}
+          onClose={() => setPaymentToDelete(null)}
+          onConfirm={() => {
+            onDeletePayment?.(purchase.id, paymentToDelete.id);
+            setPaymentToDelete(null);
+          }}
+          title="Delete payment"
+          message={`Are you sure you want to delete this draft payment (${formatCurrency(paymentToDelete.amount)} on ${formatDate(paymentToDelete.date)})?`}
+        />
+      )}
+      {paymentToEdit && (
+        <EditPaymentModal
+          isOpen={!!paymentToEdit}
+          onClose={() => setPaymentToEdit(null)}
+          initialDate={paymentToEdit.date}
+          initialAmount={paymentToEdit.amount}
+          initialReference={paymentToEdit.reference ?? ""}
+          maxAmount={balance + paymentToEdit.amount}
+          onSubmit={(date, amount, reference) => {
+            onEditPayment?.(purchase.id, paymentToEdit.id, { date, amount, reference });
+            setPaymentToEdit(null);
+          }}
+        />
+      )}
       <Modal
         isOpen={!!previewDocument}
         onClose={() => setPreviewDocument(null)}

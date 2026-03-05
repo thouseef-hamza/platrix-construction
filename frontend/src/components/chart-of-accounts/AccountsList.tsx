@@ -18,9 +18,11 @@ import { useCompany } from "@/context/CompanyContext";
 import {
   fetchChartOfAccounts,
   createChartOfAccount,
+  updateChartOfAccount,
 } from "@/lib/accountingApi";
 import AccountViewModal from "./AccountViewModal";
 import AccountCreateModal from "./AccountCreateModal";
+import AccountEditModal from "./AccountEditModal";
 
 const PAGE_SIZE = 10;
 
@@ -55,6 +57,22 @@ export default function AccountsList() {
       queryClient.invalidateQueries({ queryKey: [ACCOUNTS_QUERY_KEY, companyId] });
     },
   });
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      ...payload
+    }: {
+      id: number;
+      code: string;
+      name: string;
+      type: AccountType;
+      parentId: number | null;
+      isActive: boolean;
+    }) => updateChartOfAccount(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ACCOUNTS_QUERY_KEY, companyId] });
+    },
+  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<AccountType | "">("");
@@ -62,6 +80,8 @@ export default function AccountsList() {
   const [selected, setSelected] = useState<Account | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const sortedAccounts = useMemo(() => {
     return [...items].sort((a, b) => a.code.localeCompare(b.code));
@@ -94,10 +114,11 @@ export default function AccountsList() {
     if (totalPages > 0 && currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
-  const handleUpdate = (_id: number, _updates: Partial<Account>) => {
-    queryClient.invalidateQueries({ queryKey: [ACCOUNTS_QUERY_KEY, companyId] });
-    setSelected(null);
+  const handleEdit = (account: Account) => {
+    setEditingAccount(account);
     setViewOpen(false);
+    setSelected(null);
+    setEditOpen(true);
   };
 
   if (!companyId) return null;
@@ -108,8 +129,9 @@ export default function AccountsList() {
         <PageBreadcrumb pageTitle="Accounts" />
         <button
           type="button"
+          disabled
           onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
         >
           <svg
             className="h-5 w-5"
@@ -295,7 +317,28 @@ export default function AccountsList() {
           setViewOpen(false);
           setSelected(null);
         }}
-        onUpdate={handleUpdate}
+        onEdit={handleEdit}
+      />
+      <AccountEditModal
+        account={editingAccount}
+        accounts={items}
+        isOpen={editOpen}
+        onClose={() => {
+          setEditOpen(false);
+          setEditingAccount(null);
+        }}
+        onSave={(id, data) => {
+          updateMutation.mutate(
+            { id, ...data },
+            {
+              onSuccess: () => {
+                setEditOpen(false);
+                setEditingAccount(null);
+              },
+            }
+          );
+        }}
+        isSubmitting={updateMutation.isPending}
       />
       <AccountCreateModal
         isOpen={createOpen}

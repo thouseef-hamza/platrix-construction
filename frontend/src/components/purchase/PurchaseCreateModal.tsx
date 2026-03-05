@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
 import ConfirmPostModal from "./ConfirmPostModal";
 import Label from "@/components/form/Label";
@@ -23,6 +23,9 @@ interface PurchaseCreateModalProps {
   materials: Material[];
   isSubmitting?: boolean;
   onCreate: (data: Omit<Purchase, "id">) => void;
+  /** When set, modal works in edit mode (prefill and call onUpdate on submit). */
+  purchaseToEdit?: Purchase | null;
+  onUpdate?: (id: string, payload: { reference: string; date: string; payment_method: "cash" | "bank"; description?: string; project?: number | null; line_items: { material: number; quantity: number; rate: number }[]; status?: "draft" | "posted"; paid_amount?: number }) => void;
 }
 
 interface LineRow {
@@ -40,6 +43,8 @@ export default function PurchaseCreateModal({
   materials,
   isSubmitting = false,
   onCreate,
+  purchaseToEdit,
+  onUpdate,
 }: PurchaseCreateModalProps) {
   const [projectId, setProjectId] = useState("");
   const [supplierId, setSupplierId] = useState("");
@@ -57,9 +62,45 @@ export default function PurchaseCreateModal({
     supplier?: string;
     date?: string;
     lines?: Record<string, { quantity?: string; rate?: string }>;
+    paidAmount?: string;
   }>({});
   const formRef = useRef<HTMLFormElement>(null);
   const submitActionRef = useRef<"draft" | "posted">("draft");
+  const isEditMode = Boolean(purchaseToEdit && onUpdate);
+
+  const normalizeDate = (d: unknown): string => {
+    if (d == null) return "";
+    if (typeof d === "string") {
+      const trimmed = d.trim();
+      if (trimmed.length >= 10) return trimmed.slice(0, 10);
+      return trimmed;
+    }
+    return "";
+  };
+
+  useEffect(() => {
+    if (isOpen && purchaseToEdit) {
+      setProjectId(purchaseToEdit.project?.id ?? "");
+      setSupplierId(purchaseToEdit.supplier?.id ?? "");
+      setReference(purchaseToEdit.reference ?? "");
+      setDate(normalizeDate(purchaseToEdit.date));
+      setPaymentMethod(purchaseToEdit.paymentMethod ?? "cash");
+      setDescription(purchaseToEdit.description ?? "");
+      setPaidAmount(
+        purchaseToEdit.paidAmount != null ? String(purchaseToEdit.paidAmount) : ""
+      );
+      setLines(
+        purchaseToEdit.lineItems?.length
+          ? purchaseToEdit.lineItems.map((item, i) => ({
+              id: `row-${i}-${item.id}`,
+              materialId: item.materialId,
+              quantity: String(item.quantity),
+              rate: String(item.rate),
+            }))
+          : [{ id: "row-1", materialId: "", quantity: "", rate: "" }]
+      );
+    }
+  }, [isOpen, purchaseToEdit]);
 
   const addLine = useCallback(() => {
     setLines((prev) => [
@@ -111,16 +152,49 @@ export default function PurchaseCreateModal({
         newErrors.lines[firstRowId] = { quantity: "Add at least one material with quantity and rate greater than 0." };
       }
     }
+    const totalAmount = lines.reduce(
+      (sum, r) => sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
+      0
+    );
+    const paidAmountNum = parseFloat(paidAmount) || 0;
+    if (paidAmountNum > totalAmount) {
+      newErrors.paidAmount = "Paid amount cannot exceed total amount.";
+    }
     const valid = Object.keys(newErrors).length === 0;
     return { valid, newErrors };
-  }, [supplierId, date, lines]);
+  }, [supplierId, date, lines, paidAmount]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     const { valid, newErrors } = runValidation();
     if (!valid) {
       setErrors(newErrors);
+      return;
+    }
+
+    if (isEditMode && purchaseToEdit && onUpdate) {
+      const lineItemsPayload = lines
+        .filter((r) => r.materialId && (parseFloat(r.quantity) || 0) > 0 && (parseFloat(r.rate) || 0) > 0)
+        .map((r) => ({
+          material: Number(r.materialId),
+          quantity: parseFloat(r.quantity) || 0,
+          rate: parseFloat(r.rate) || 0,
+        }));
+      if (lineItemsPayload.length === 0) return;
+      const paidAmountNum = parseFloat(paidAmount) || 0;
+      onUpdate(purchaseToEdit.id, {
+        reference: reference.trim() || "—",
+        date: date || new Date().toISOString().slice(0, 10),
+        payment_method: paymentMethod,
+        description: description.trim(),
+        project: projectId ? Number(projectId) : null,
+        line_items: lineItemsPayload,
+        status: submitActionRef.current,
+        paid_amount: paidAmountNum,
+      });
+      resetForm();
+      onClose();
       return;
     }
 
@@ -168,7 +242,7 @@ export default function PurchaseCreateModal({
       amount,
       description: description.trim() || undefined,
       attachments,
-      paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
+      paidAmount: paidAmountNum,
       paymentStatus,
     });
     resetForm();
@@ -206,7 +280,7 @@ export default function PurchaseCreateModal({
     <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Add Purchase
+          {isEditMode ? "Edit Purchase" : "Add Purchase"}
         </h2>
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -265,6 +339,7 @@ export default function PurchaseCreateModal({
                 Date <span className="text-red-600 dark:text-red-400">*</span>
               </Label>
               <DatePicker
+                key={`purchase-date-${date || "empty"}`}
                 id="purchase-date"
                 placeholder="Select date"
                 value={date}
@@ -418,6 +493,9 @@ export default function PurchaseCreateModal({
                 onChange={(e) => setPaidAmount(e.target.value)}
                 placeholder="0"
               />
+              {errors.paidAmount && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.paidAmount}</p>
+              )}
             </div>
           </div>
 
