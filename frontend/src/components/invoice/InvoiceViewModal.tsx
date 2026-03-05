@@ -132,6 +132,8 @@ interface InvoiceViewModalProps {
   onClose: () => void;
   /** e.g. "Client Invoice" or "Subcontractor Invoice" */
   title: string;
+  /** 0=client (income), 1=subcontractor (expense). Affects "Received" vs "Paid" labels. */
+  invoiceType?: 0 | 1;
   onEdit?: (invoice: Invoice) => void;
 }
 
@@ -140,6 +142,7 @@ export default function InvoiceViewModal({
   isOpen,
   onClose,
   title,
+  invoiceType = 1,
   onEdit,
 }: InvoiceViewModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
@@ -425,7 +428,7 @@ export default function InvoiceViewModal({
                   <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white tabular-nums">{formatCurrency(invoice.amount)}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Paid amount (QAR)</dt>
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">{invoiceType === 0 ? "Received amount (QAR)" : "Paid amount (QAR)"}</dt>
                   <dd className="mt-1 text-sm text-gray-900 dark:text-white tabular-nums">{formatCurrency(currentPaid)}</dd>
                 </div>
                 {invoice.description && (
@@ -441,7 +444,7 @@ export default function InvoiceViewModal({
                     <span className="tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(invoice.amount)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Paid</span>
+                    <span className="text-gray-600 dark:text-gray-400">{invoiceType === 0 ? "Received" : "Paid"}</span>
                     <span className="tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(currentPaid)}</span>
                   </div>
                   <div className="flex justify-between text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -475,7 +478,7 @@ export default function InvoiceViewModal({
               <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] p-4 space-y-2">
                 <h3 className="text-sm font-semibold text-gray-800 dark:text-white">Payment summary</h3>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Paid</span>
+                  <span className="text-gray-600 dark:text-gray-400">{invoiceType === 0 ? "Received" : "Paid"}</span>
                   <span className="tabular-nums font-medium text-gray-900 dark:text-white">{formatCurrency(currentPaid)}</span>
                 </div>
                 <div className="flex justify-between text-sm">

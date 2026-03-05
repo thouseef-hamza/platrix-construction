@@ -280,7 +280,7 @@ class InvoiceWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         initial_paid = validated_data.pop("paid_amount", None)
-        amount = validated_data.get("amount") or Decimal("0.00")
+        amount = validated_data.pop("amount", None) or Decimal("0.00")
         if _reference_is_empty(validated_data.get("reference")):
             validated_data["reference"] = _generate_invoice_reference(
                 validated_data.get("account"),

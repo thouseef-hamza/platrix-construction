@@ -285,6 +285,7 @@ export default function BillsList() {
           setSelectedId(null);
         }}
         title="Subcontractor Invoice"
+        invoiceType={INVOICE_TYPE_SUBCONTRACTOR}
         onEdit={handleEditFromView}
       />
 

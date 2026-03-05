@@ -100,7 +100,7 @@ export default function InvoiceCreateModal({
     if (!partyId?.trim()) newErrors.party = "Party is required.";
     if (!date?.trim()) newErrors.date = "Date is required.";
     if (amountNum <= 0) newErrors.amount = "Amount must be greater than 0.";
-    if (paidNum > amountNum) newErrors.paidAmount = "Paid amount cannot exceed total amount.";
+    if (paidNum > amountNum) newErrors.paidAmount = invoiceType === 0 ? "Received amount cannot exceed total amount." : "Paid amount cannot exceed total amount.";
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
@@ -234,7 +234,7 @@ export default function InvoiceCreateModal({
               </select>
             </div>
             <div>
-              <Label>Paid amount (QAR)</Label>
+              <Label>{invoiceType === 0 ? "Received amount (QAR)" : "Paid amount (QAR)"}</Label>
               <input
                 type="number"
                 min={0}

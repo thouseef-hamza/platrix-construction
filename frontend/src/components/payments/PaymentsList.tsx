@@ -254,6 +254,7 @@ export default function PaymentsList() {
           setSelectedId(null);
         }}
         title="Client Invoice"
+        invoiceType={INVOICE_TYPE_CLIENT}
         onEdit={handleEditFromView}
       />
 
