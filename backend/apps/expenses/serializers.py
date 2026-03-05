@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.db.models import Sum
 from rest_framework import serializers
 
 from apps.accounting.constants import ACCOUNT_TYPE_EXPENSE
@@ -39,6 +40,39 @@ class ExpensePaymentWriteSerializer(serializers.ModelSerializer):
         if value is not None and value <= 0:
             raise serializers.ValidationError("Amount must be positive.")
         return value
+
+    def validate(self, attrs):
+        expense = self.context.get("expense") or (
+            self.instance.expense if self.instance else None
+        )
+        if not expense:
+            return attrs
+
+        amount = attrs.get("amount")
+        if amount is None and self.instance:
+            amount = self.instance.amount
+        if amount is None:
+            return attrs
+
+        amount = Decimal(str(amount))
+        other_payments = expense.payments.filter(is_deleted=False)
+        if self.instance:
+            other_payments = other_payments.exclude(pk=self.instance.pk)
+        total_other = (
+            other_payments.aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        )
+        expense_amount = getattr(expense, "amount", None) or Decimal("0.00")
+        if isinstance(expense_amount, (int, float)):
+            expense_amount = Decimal(str(expense_amount))
+
+        if total_other + amount > expense_amount:
+            raise serializers.ValidationError(
+                {
+                    "amount": "Payment amount cannot exceed the remaining balance due. "
+                    "Total payments must not exceed the expense amount."
+                }
+            )
+        return attrs
 
 
 class ExpenseListSerializer(serializers.ModelSerializer):
@@ -234,6 +268,8 @@ class ExpenseWriteSerializer(serializers.ModelSerializer):
         account_id = attrs.get("account")
         if account_id is not None:
             account_id = getattr(account_id, "pk", account_id)
+        elif self.instance is not None:
+            account_id = getattr(self.instance, "account_id", None)
         payee = attrs.get("payee")
         project = attrs.get("project")
         if payee and getattr(payee, "account_id", None) != account_id:
@@ -271,8 +307,12 @@ class ExpenseWriteSerializer(serializers.ModelSerializer):
             **validated_data,
             paid_amount=Decimal("0.00"),
         )
-        # When drafting, do not create any payment line (only when posted).
-        if (
+        # When drafting, store paid_amount on the expense (no payment line). When posted, create payment.
+        if expense.status == EXPENSE_STATUS_DRAFT:
+            if initial_paid is not None:
+                expense.paid_amount = initial_paid
+                expense.save(update_fields=["paid_amount"])
+        elif (
             initial_paid is not None
             and initial_paid > 0
             and expense.status == EXPENSE_STATUS_POSTED
@@ -299,24 +339,30 @@ class ExpenseWriteSerializer(serializers.ModelSerializer):
         initial_paid = validated_data.pop("paid_amount", None)
         for key, value in validated_data.items():
             setattr(instance, key, value)
+        # For drafts, persist paid_amount on the expense (no payment line).
+        if initial_paid is not None and instance.status == EXPENSE_STATUS_DRAFT:
+            instance.paid_amount = initial_paid
         instance.save()
-        if (
-            initial_paid is not None
-            and initial_paid > 0
-            and instance.status == EXPENSE_STATUS_POSTED
-        ):
-            if initial_paid > instance.amount:
-                raise serializers.ValidationError(
-                    {"paid_amount": "Paid amount cannot exceed total amount."}
+        # When posting (draft -> posted), create payment from initial_paid or stored paid_amount.
+        if instance.status == EXPENSE_STATUS_POSTED:
+            amount_to_pay = None
+            if initial_paid is not None and initial_paid > 0:
+                amount_to_pay = initial_paid
+            elif (instance.paid_amount or Decimal("0.00")) > 0:
+                amount_to_pay = instance.paid_amount
+            if amount_to_pay is not None and amount_to_pay > 0:
+                if amount_to_pay > instance.amount:
+                    raise serializers.ValidationError(
+                        {"paid_amount": "Paid amount cannot exceed total amount."}
+                    )
+                ExpensePayment.objects.create(
+                    expense=instance,
+                    date=instance.date,
+                    amount=amount_to_pay,
+                    reference="",
+                    status=PAYMENT_LEDGER_POSTED,
                 )
-            ExpensePayment.objects.create(
-                expense=instance,
-                date=instance.date,
-                amount=initial_paid,
-                reference="",
-                status=PAYMENT_LEDGER_POSTED,
-            )
-            _recompute_payment_status(instance)
+                _recompute_payment_status(instance)
         return instance
 
 

@@ -4,7 +4,10 @@ import React, { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
 import MakePaymentModal from "@/components/purchase/MakePaymentModal";
+import ConfirmPostModal from "@/components/purchase/ConfirmPostModal";
 import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
+import DatePicker from "@/components/form/date-picker";
+import Label from "@/components/form/Label";
 import { formatCurrency, formatDate } from "@/utils/format";
 import type { Expense, ExpenseCategory } from "@/types/expense";
 import {
@@ -22,6 +25,107 @@ const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   employee_paid: "Employee-paid expense",
 };
 
+const inputClass =
+  "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
+
+function EditExpensePaymentModal({
+  isOpen,
+  onClose,
+  initialDate,
+  initialAmount,
+  initialReference,
+  maxAmount,
+  onSubmit,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  initialDate: string;
+  initialAmount: number;
+  initialReference: string;
+  maxAmount: number;
+  onSubmit: (date: string, amount: number, reference: string) => void;
+}) {
+  const [date, setDate] = useState(initialDate?.slice(0, 10) ?? "");
+  const [amount, setAmount] = useState(String(initialAmount ?? ""));
+  const [reference, setReference] = useState(initialReference ?? "");
+  const [amountError, setAmountError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setDate(initialDate?.slice(0, 10) ?? "");
+      setAmount(String(initialAmount ?? ""));
+      setReference(initialReference ?? "");
+      setAmountError(null);
+    }
+  }, [isOpen, initialDate, initialAmount, initialReference]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAmountError(null);
+    const amountNum = parseFloat(amount) || 0;
+    if (amountNum <= 0) {
+      setAmountError("Amount must be greater than 0.");
+      return;
+    }
+    if (amountNum > maxAmount) {
+      setAmountError("Amount cannot exceed the remaining balance for this payment.");
+      return;
+    }
+    if (!date?.trim()) return;
+    onSubmit(date.trim(), amountNum, reference.trim());
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[95vw] w-full mx-4">
+      <form onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit payment</h2>
+        <div className="space-y-4">
+          <div>
+            <Label>Date <span className="text-red-600 dark:text-red-400">*</span></Label>
+            <DatePicker
+              id="edit-expense-payment-date"
+              placeholder="Select date"
+              value={date}
+              onChange={(_, dateStr) => setDate(dateStr ?? "")}
+            />
+          </div>
+          <div>
+            <Label>Amount (QAR) <span className="text-red-600 dark:text-red-400">*</span></Label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className={inputClass + (amountError ? " border-red-500 dark:border-red-400" : "")}
+              value={amount}
+              onChange={(e) => { setAmount(e.target.value); setAmountError(null); }}
+              placeholder="0"
+            />
+            {amountError && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{amountError}</p>}
+          </div>
+          <div>
+            <Label>Reference (optional)</Label>
+            <input
+              type="text"
+              className={inputClass}
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder="—"
+            />
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+            Cancel
+          </button>
+          <button type="submit" className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
+            Save
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 interface ExpenseViewModalProps {
   expense: Expense | null;
   isOpen: boolean;
@@ -29,6 +133,10 @@ interface ExpenseViewModalProps {
   onUpdate?: (id: string, updates: Partial<Expense>) => void;
   /** Post a draft payment to the ledger. */
   onPostPayment?: (expenseId: string, paymentId: string) => void;
+  /** Edit a draft payment (date, amount, reference). */
+  onEditPayment?: (expenseId: string, paymentId: string, payload: { date: string; amount: number; reference?: string }) => void;
+  /** Delete a draft payment. */
+  onDeletePayment?: (expenseId: string, paymentId: string) => void;
   /** Edit draft expense (opens edit flow). */
   onEdit?: (expense: Expense) => void;
 }
@@ -41,11 +149,17 @@ export default function ExpenseViewModal({
   onClose,
   onUpdate,
   onPostPayment,
+  onEditPayment,
+  onDeletePayment,
   onEdit,
 }: ExpenseViewModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
+  const [postModalOpen, setPostModalOpen] = useState(false);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+  const [paymentToEdit, setPaymentToEdit] = useState<{ id: string; date: string; amount: number; reference?: string } | null>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<{ id: string; date: string; amount: number } | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<ExpenseDocument | null>(null);
+  const isDraft = (expense?.status ?? "draft") === "draft";
   const [previewDocument, setPreviewDocument] = useState<{ name: string; url: string | null; filename: string } | null>(null);
   const [uploadName, setUploadName] = useState("");
   const [uploadDescription, setUploadDescription] = useState("");
@@ -95,6 +209,11 @@ export default function ExpenseViewModal({
   const paidAmount = expense.paidAmount ?? 0;
   const expenseBalance = expense.amount - paidAmount;
   const showAddPayment = expenseBalance > 0 && onUpdate && expense.status === "posted";
+
+  const handlePostConfirm = () => {
+    onUpdate?.(expense.id, { status: "posted" });
+    setPostModalOpen(false);
+  };
 
   const handleAddPaymentSubmit = (
     amount: number,
@@ -388,6 +507,19 @@ export default function ExpenseViewModal({
           )}
         </dl>
         )}
+        {activeTab === "details" && (
+          <div className="mt-6 flex flex-wrap gap-3">
+            {isDraft && onUpdate && (
+              <button
+                type="button"
+                onClick={() => setPostModalOpen(true)}
+                className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+              >
+                Post
+              </button>
+            )}
+          </div>
+        )}
 
         {activeTab === "payments" && (
           <div className="space-y-4">
@@ -423,36 +555,67 @@ export default function ExpenseViewModal({
               </div>
               {paymentList.length > 0 ? (
                 <ul className="space-y-2">
-                  {paymentList.map((p) => (
-                    <li
-                      key={p.id}
-                      className="flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-white/[0.03] px-3 py-2 text-sm"
-                    >
-                      <span className="font-medium text-gray-800 dark:text-white/90">{formatDate(p.date)}</span>
-                      <span className="text-gray-600 dark:text-gray-400 tabular-nums">{formatCurrency(p.amount)}</span>
-                      {p.reference ? (
-                        <span className="text-gray-500 dark:text-gray-500 truncate max-w-[120px]">{p.reference}</span>
-                      ) : null}
-                      <span
-                        className={
-                          (p.status ?? "draft") === "posted"
-                            ? "inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                            : "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                        }
+                  {paymentList.map((p) => {
+                    const pAmount = typeof p.amount === "number" ? p.amount : parseFloat(String(p.amount)) || 0;
+                    return (
+                      <li
+                        key={p.id}
+                        className="flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-white/[0.03] px-3 py-2 text-sm"
                       >
-                        {(p.status ?? "draft") === "posted" ? "Posted" : "Draft"}
-                      </span>
-                      {onPostPayment && (p.status ?? "draft") === "draft" && (expense.status ?? "draft") !== "draft" ? (
-                        <button
-                          type="button"
-                          onClick={() => onPostPayment(expense.id, p.id)}
-                          className="ml-auto text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                        <span className="font-medium text-gray-800 dark:text-white/90">{formatDate(p.date)}</span>
+                        <span className="text-gray-600 dark:text-gray-400 tabular-nums">{formatCurrency(pAmount)}</span>
+                        {p.reference ? (
+                          <span className="text-gray-500 dark:text-gray-500 truncate max-w-[120px]">{p.reference}</span>
+                        ) : null}
+                        <span
+                          className={
+                            (p.status ?? "draft") === "posted"
+                              ? "inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              : "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                          }
                         >
-                          Post
-                        </button>
-                      ) : null}
-                    </li>
-                  ))}
+                          {(p.status ?? "draft") === "posted" ? "Posted" : "Draft"}
+                        </span>
+                        {(onPostPayment || onEditPayment || onDeletePayment) && expense.status === "posted" ? (
+                          <div className="ml-auto flex items-center gap-1">
+                            {onPostPayment && (p.status ?? "draft") === "draft" ? (
+                              <button
+                                type="button"
+                                onClick={() => onPostPayment(expense.id, p.id)}
+                                className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                              >
+                                Post
+                              </button>
+                            ) : null}
+                            {onEditPayment && (p.status ?? "draft") === "draft" ? (
+                              <button
+                                type="button"
+                                onClick={() => setPaymentToEdit({ id: p.id, date: p.date, amount: pAmount, reference: p.reference })}
+                                title="Edit"
+                                className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                            ) : null}
+                            {onDeletePayment && (p.status ?? "draft") === "draft" ? (
+                              <button
+                                type="button"
+                                onClick={() => setPaymentToDelete({ id: p.id, date: p.date, amount: pAmount })}
+                                title="Delete"
+                                className="rounded p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No payments recorded yet.</p>
@@ -614,12 +777,43 @@ export default function ExpenseViewModal({
         )}
       </div>
     </Modal>
+    <ConfirmPostModal
+      isOpen={postModalOpen}
+      onClose={() => setPostModalOpen(false)}
+      onConfirm={handlePostConfirm}
+    />
     {onUpdate && (
       <MakePaymentModal
         isOpen={addPaymentOpen}
         onClose={() => setAddPaymentOpen(false)}
         balance={expenseBalance}
         onSubmit={handleAddPaymentSubmit}
+      />
+    )}
+    {paymentToDelete && (
+      <ConfirmDeleteModal
+        isOpen={!!paymentToDelete}
+        onClose={() => setPaymentToDelete(null)}
+        onConfirm={() => {
+          onDeletePayment?.(expense.id, paymentToDelete.id);
+          setPaymentToDelete(null);
+        }}
+        title="Delete payment"
+        message={`Are you sure you want to delete this draft payment (${formatCurrency(paymentToDelete.amount)} on ${formatDate(paymentToDelete.date)})?`}
+      />
+    )}
+    {paymentToEdit && (
+      <EditExpensePaymentModal
+        isOpen={!!paymentToEdit}
+        onClose={() => setPaymentToEdit(null)}
+        initialDate={paymentToEdit.date}
+        initialAmount={paymentToEdit.amount}
+        initialReference={paymentToEdit.reference ?? ""}
+        maxAmount={expenseBalance + paymentToEdit.amount}
+        onSubmit={(date, amount, reference) => {
+          onEditPayment?.(expense.id, paymentToEdit.id, { date, amount, reference });
+          setPaymentToEdit(null);
+        }}
       />
     )}
     <ConfirmDeleteModal

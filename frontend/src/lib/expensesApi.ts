@@ -281,15 +281,32 @@ export async function addExpensePayment(
   await api.post(`/expenses/${expenseId}/payments/`, body);
 }
 
+export interface PatchExpensePaymentPayload {
+  status?: "draft" | "posted";
+  date?: string;
+  amount?: number;
+  reference?: string;
+}
+
 export async function patchExpensePayment(
   expenseId: number,
   paymentId: number,
-  payload: { status?: "draft" | "posted" }
+  payload: PatchExpensePaymentPayload
 ): Promise<void> {
   const body: Record<string, unknown> = {};
   if (payload.status !== undefined)
     body.status = PAYMENT_LEDGER_TO_BACKEND[payload.status];
+  if (payload.date !== undefined) body.date = payload.date;
+  if (payload.amount !== undefined) body.amount = String(payload.amount);
+  if (payload.reference !== undefined) body.reference = payload.reference ?? "";
   await api.patch(`/expenses/${expenseId}/payments/${paymentId}/`, body);
+}
+
+export async function deleteExpensePayment(
+  expenseId: number,
+  paymentId: number
+): Promise<void> {
+  await api.delete(`/expenses/${expenseId}/payments/${paymentId}/`);
 }
 
 // --- Expense documents (list, upload, download, delete) ---

@@ -23,6 +23,7 @@ import {
   updateExpense,
   addExpensePayment,
   patchExpensePayment,
+  deleteExpensePayment,
   type CreateExpensePayload,
 } from "@/lib/expensesApi";
 import { fetchEmployees } from "@/lib/employeesApi";
@@ -149,8 +150,16 @@ export default function ExpensesList() {
     }: {
       expenseId: number;
       paymentId: number;
-      payload: { status: "draft" | "posted" };
+      payload: Parameters<typeof patchExpensePayment>[2];
     }) => patchExpensePayment(expenseId, paymentId, payload),
+    onSuccess: (_, { expenseId }) => {
+      queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+    },
+  });
+  const deletePaymentMutation = useMutation({
+    mutationFn: ({ expenseId, paymentId }: { expenseId: number; paymentId: number }) =>
+      deleteExpensePayment(expenseId, paymentId),
     onSuccess: (_, { expenseId }) => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
@@ -438,6 +447,16 @@ export default function ExpensesList() {
             paymentId: Number(paymentId),
             payload: { status: "posted" },
           })
+        }
+        onEditPayment={(expenseId, paymentId, payload) =>
+          patchPaymentMutation.mutate({
+            expenseId: Number(expenseId),
+            paymentId: Number(paymentId),
+            payload: { date: payload.date, amount: payload.amount, reference: payload.reference ?? "" },
+          })
+        }
+        onDeletePayment={(expenseId, paymentId) =>
+          deletePaymentMutation.mutate({ expenseId: Number(expenseId), paymentId: Number(paymentId) })
         }
         onEdit={(exp) => {
           setExpenseToEdit(exp);

@@ -195,7 +195,7 @@ export default function ExpenseCreateModal({
         project: projectId ? Number(projectId) : null,
         expense_account: category === "general" && expenseAccountId ? Number(expenseAccountId) : undefined,
         status,
-        paid_amount: status === "posted" && paidAmountNum > 0 ? paidAmountNum : undefined,
+        paid_amount: paidAmountNum > 0 ? paidAmountNum : undefined,
       });
       resetForm();
       onClose();
@@ -217,7 +217,7 @@ export default function ExpenseCreateModal({
         project: project ?? undefined,
         attachments,
         paymentMethod,
-        paidAmount: status === "posted" && paidAmountNum > 0 ? paidAmountNum : undefined,
+        paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
         status,
       });
     } else if (isEmployeePaid) {
@@ -233,7 +233,7 @@ export default function ExpenseCreateModal({
         employeeRef: employee,
         project: project ?? undefined,
         paymentMethod,
-        paidAmount: status === "posted" && paidAmountNum > 0 ? paidAmountNum : undefined,
+        paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
         attachments,
         status,
       });
@@ -248,7 +248,7 @@ export default function ExpenseCreateModal({
         project: isProject ? project ?? undefined : undefined,
         attachments,
         paymentMethod,
-        paidAmount: status === "posted" && paidAmountNum > 0 ? paidAmountNum : undefined,
+        paidAmount: paidAmountNum > 0 ? paidAmountNum : undefined,
         status,
         expenseAccountId: category === "general" && expenseAccountId ? Number(expenseAccountId) : undefined,
       });
@@ -265,7 +265,7 @@ export default function ExpenseCreateModal({
   return (
     <>
     <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-y-auto">
-      <form ref={formRef} onSubmit={handleSubmit} className="p-6 sm:p-8">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
           {isEditMode ? "Edit Expense" : "Add Expense"}
         </h2>
@@ -308,10 +308,9 @@ export default function ExpenseCreateModal({
             <div>
               <Label>Project</Label>
               <select
-                className={errors.project ? selectClass + " border-error-500" : selectClass}
+                className={errors.project ? selectClass + " border-red-500 dark:border-red-400" : selectClass}
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                required={isProject}
               >
                 <option value="">Select project</option>
                 {projects.map((p) => (
@@ -320,7 +319,7 @@ export default function ExpenseCreateModal({
                   </option>
                 ))}
               </select>
-              {errors.project && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.project}</p>}
+              {errors.project && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.project}</p>}
             </div>
           )}
 
@@ -359,29 +358,25 @@ export default function ExpenseCreateModal({
                   <Label>{laborType === "hourly" ? "Hours" : "Days"}</Label>
                   <input
                     type="number"
-                    min={0}
                     step={laborType === "hourly" ? "0.5" : "1"}
-                    className={errors.quantity ? inputClass + " border-error-500" : inputClass}
+                    className={errors.quantity ? inputClass + " border-red-500 dark:border-red-400" : inputClass}
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     placeholder="0"
-                    required={isLabor}
                   />
-                  {errors.quantity && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.quantity}</p>}
+                  {errors.quantity && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.quantity}</p>}
                 </div>
                 <div>
                   <Label>Rate (QAR per {laborType === "hourly" ? "hour" : "day"})</Label>
                   <input
                     type="number"
-                    min={0}
                     step="0.01"
-                    className={errors.rate ? inputClass + " border-error-500" : inputClass}
+                    className={errors.rate ? inputClass + " border-red-500 dark:border-red-400" : inputClass}
                     value={rate}
                     onChange={(e) => setRate(e.target.value)}
                     placeholder="0"
-                    required={isLabor}
                   />
-                  {errors.rate && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.rate}</p>}
+                  {errors.rate && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.rate}</p>}
                 </div>
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums">
@@ -395,10 +390,9 @@ export default function ExpenseCreateModal({
               <div>
                 <Label>Employee</Label>
                 <select
-                  className={errors.employee ? selectClass + " border-error-500" : selectClass}
+                  className={errors.employee ? selectClass + " border-red-500 dark:border-red-400" : selectClass}
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
-                  required={isEmployeePaid}
                 >
                   <option value="">Select employee</option>
                   {employees.map((emp) => (
@@ -407,7 +401,7 @@ export default function ExpenseCreateModal({
                     </option>
                   ))}
                 </select>
-                {errors.employee && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.employee}</p>}
+                {errors.employee && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.employee}</p>}
               </div>
               <div>
                 <Label>Project (optional)</Label>
@@ -431,13 +425,12 @@ export default function ExpenseCreateModal({
             <Label>Description</Label>
             <input
               type="text"
-              className={errors.description ? inputClass + " border-error-500" : inputClass}
+              className={errors.description ? inputClass + " border-red-500 dark:border-red-400" : inputClass}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Site equipment rental"
-              required
             />
-            {errors.description && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.description}</p>}
+            {errors.description && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>}
           </div>
 
           {!isLabor && (
@@ -446,15 +439,13 @@ export default function ExpenseCreateModal({
                 <Label>Amount (QAR)</Label>
                 <input
                   type="number"
-                  min={0}
                   step="0.01"
-                  className={errors.amount ? inputClass + " border-error-500" : inputClass}
+                  className={errors.amount ? inputClass + " border-red-500 dark:border-red-400" : inputClass}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0"
-                  required={!isLabor}
                 />
-                {errors.amount && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.amount}</p>}
+                {errors.amount && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.amount}</p>}
               </div>
               <div>
                 <DatePicker
@@ -464,7 +455,7 @@ export default function ExpenseCreateModal({
                   value={date}
                   onChange={(_, dateStr) => setDate(dateStr ?? "")}
                 />
-                {errors.date && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.date}</p>}
+                {errors.date && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.date}</p>}
               </div>
             </div>
           )}
@@ -478,7 +469,7 @@ export default function ExpenseCreateModal({
                 value={date}
                 onChange={(_, dateStr) => setDate(dateStr ?? "")}
               />
-              {errors.date && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{errors.date}</p>}
+              {errors.date && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.date}</p>}
             </div>
           )}
 
@@ -498,9 +489,8 @@ export default function ExpenseCreateModal({
               <Label>Paid amount (QAR)</Label>
               <input
                 type="number"
-                min={0}
                 step="0.01"
-                className={inputClass}
+                className={errors.paidAmount ? inputClass + " border-red-500 dark:border-red-400" : inputClass}
                 value={paidAmount}
                 onChange={(e) => setPaidAmount(e.target.value)}
                 placeholder="0"

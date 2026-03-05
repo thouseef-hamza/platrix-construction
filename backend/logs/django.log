@@ -3791,3 +3791,25 @@ Watching for file changes with StatReloader
 Watching for file changes with StatReloader
 /home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
 Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /favicon.ico
+Unauthorized: /api/expenses/expense-accounts/
+Bad Request: /api/expenses/4/
+Bad Request: /api/expenses/3/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader

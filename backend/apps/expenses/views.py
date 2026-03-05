@@ -11,7 +11,7 @@ from apps.accounting.models import ChartOfAccount
 from apps.accounts.models import AccountUser
 from apps.core.models import Document
 
-from .constants import EXPENSE_STATUS_POSTED, GENERAL_EXPENSE_EXCLUDED_COA_CODES
+from .constants import EXPENSE_STATUS_POSTED, GENERAL_EXPENSE_EXCLUDED_COA_CODES, PAYMENT_LEDGER_DRAFT
 from .models import Expense, ExpensePayment
 from .serializers import (
     ExpenseDetailSerializer,
@@ -169,7 +169,9 @@ class ExpensePaymentListCreateAPIView(APIView):
                 {"detail": "Payment entries can only be created when the expense is posted."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        serializer = ExpensePaymentWriteSerializer(data=request.data)
+        serializer = ExpensePaymentWriteSerializer(
+            data=request.data, context={"expense": expense}
+        )
         serializer.is_valid(raise_exception=True)
         payment = serializer.save(expense=expense)
         _recompute_payment_status(expense)
@@ -205,12 +207,29 @@ class ExpensePaymentDetailAPIView(APIView):
             )
         payment = get_payment_for_expense(request, pk, payment_pk)
         serializer = ExpensePaymentWriteSerializer(
-            payment, data=request.data, partial=True
+            payment, data=request.data, partial=True, context={"expense": payment.expense}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         _recompute_payment_status(payment.expense)
         return Response(ExpensePaymentReadSerializer(payment).data)
+
+    def delete(self, request, pk, payment_pk):
+        if _current_account_id(request) is None:
+            return Response(
+                {"detail": "x-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        payment = get_payment_for_expense(request, pk, payment_pk)
+        if payment.status != PAYMENT_LEDGER_DRAFT:
+            return Response(
+                {"detail": "Only draft payments can be deleted."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        payment.is_deleted = True
+        payment.save(update_fields=["is_deleted", "updated_at"])
+        _recompute_payment_status(payment.expense)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ExpenseDocumentListCreateAPIView(APIView):
