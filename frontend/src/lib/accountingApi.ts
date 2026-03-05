@@ -92,6 +92,7 @@ function apiCoaToAccount(apiCoa: ApiChartOfAccount): Account {
     parentId: apiCoa.parent ?? null,
     balance: parseFloat(apiCoa.balance) || 0,
     isActive: apiCoa.is_active,
+    isSystem: apiCoa.is_system,
   };
 }
 
@@ -151,6 +152,29 @@ export async function getChartOfAccount(id: number): Promise<Account | null> {
     `/accounting/chart-of-accounts/${id}/`
   );
   return data ? apiCoaToAccount(data) : null;
+}
+
+export async function updateChartOfAccount(
+  id: number,
+  payload: {
+    code?: string;
+    name?: string;
+    type?: AccountType;
+    parentId?: number | null;
+    isActive?: boolean;
+  }
+): Promise<Account> {
+  const body: Record<string, unknown> = {};
+  if (payload.code !== undefined) body.code = payload.code;
+  if (payload.name !== undefined) body.name = payload.name;
+  if (payload.type !== undefined) body.account_type = ACCOUNT_TYPE_TO_BACKEND[payload.type];
+  if (payload.parentId !== undefined) body.parent = payload.parentId ?? null;
+  if (payload.isActive !== undefined) body.is_active = payload.isActive;
+  const { data } = await api.patch<ApiChartOfAccount>(
+    `/accounting/chart-of-accounts/${id}/`,
+    body
+  );
+  return apiCoaToAccount(data);
 }
 
 // --- Journal entries ---

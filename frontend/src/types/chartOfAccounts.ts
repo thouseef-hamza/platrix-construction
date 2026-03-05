@@ -11,9 +11,11 @@ export interface Account {
   name: string;
   type: AccountType;
   parentId: number | null;
-  /** Balance from ledger: sum(debit - credit) for posted entries. Positive = debit balance, negative = credit balance. */
+  /** Balance from ledger. Asset/expense: debit-credit. Liability/equity/revenue: credit-debit. */
   balance: number;
   isActive: boolean;
+  /** True if account was created from seed; cannot be edited or deleted. */
+  isSystem?: boolean;
 }
 
 export type JournalEntryStatus = "draft" | "posted";

@@ -40,3 +40,19 @@ MARITAL_STATUS_CHOICES = [
     ("divorced", "Divorced"),
     ("widowed", "Widowed"),
 ]
+
+# Salary entry status: 0 = Draft, 1 = Posted
+SALARY_ENTRY_STATUS_DRAFT = 0
+SALARY_ENTRY_STATUS_POSTED = 1
+SALARY_ENTRY_STATUS_CHOICES = [
+    (SALARY_ENTRY_STATUS_DRAFT, "Draft"),
+    (SALARY_ENTRY_STATUS_POSTED, "Posted"),
+]
+
+# Payment method: 0 = Cash, 1 = Bank
+PAYMENT_METHOD_CASH = 0
+PAYMENT_METHOD_BANK = 1
+PAYMENT_METHOD_CHOICES = [
+    (PAYMENT_METHOD_CASH, "Cash"),
+    (PAYMENT_METHOD_BANK, "Bank"),
+]

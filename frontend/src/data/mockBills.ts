@@ -1,8 +1,8 @@
-import type { Bill, ProjectRef } from "@/types/bill";
+import type { Bill, ProjectRef, SubcontractorRef } from "@/types/bill";
 import { MOCK_SUBCONTRACTS } from "./mockCompanies";
 import { MOCK_PROJECTS } from "./mockProjects";
 
-const subs = MOCK_SUBCONTRACTS;
+const subs: SubcontractorRef[] = MOCK_SUBCONTRACTS.map((c) => ({ id: String(c.id), name: c.name }));
 const projectRefs: ProjectRef[] = MOCK_PROJECTS.map((p) => ({ id: p.id, name: p.projectName }));
 
 export const MOCK_BILLS: Bill[] = [

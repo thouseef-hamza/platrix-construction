@@ -1,20 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
-import Label from "@/components/form/Label";
-import DatePicker from "@/components/form/date-picker";
 import { formatCurrency, formatDate } from "@/utils/format";
-import type { Employee, EmployeeSalaryEntry, EmployeeTransaction } from "@/types/employee";
+import type { Employee, EmployeeSalaryEntry } from "@/types/employee";
+import type {
+  AddSalaryPayload,
+  UpdateSalaryPayload,
+  EmployeeDocument,
+} from "@/lib/employeesApi";
 import {
-  SPONSORSHIP_LABELS,
-  EMPLOYMENT_TYPE_LABELS,
-  EMPLOYMENT_STATUS_LABELS,
-} from "@/types/employee";
-import type { AddSalaryPayload, AddTransactionPayload } from "@/lib/employeesApi";
+  deleteEmployeeDocument,
+  downloadEmployeeDocument,
+  fetchEmployeeDocuments,
+  uploadEmployeeDocument,
+} from "@/lib/employeesApi";
+import AddSalaryEntryModal from "./AddSalaryEntryModal";
+import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
 
 type Tab =
   | "details"
+  | "dashboard"
   | "identification"
   | "employment"
   | "salary_wps"
@@ -24,6 +31,7 @@ type Tab =
   | "documents";
 
 const tabs: { id: Tab; label: string }[] = [
+  { id: "dashboard", label: "Dashboard" },
   { id: "details", label: "Details" },
   { id: "identification", label: "Identification" },
   { id: "employment", label: "Employment" },
@@ -33,9 +41,6 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "financial", label: "Financial" },
   { id: "documents", label: "Documents" },
 ];
-
-const inputClass =
-  "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800";
 
 function Field({
   label,
@@ -62,10 +67,16 @@ interface EmployeeViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate?: (id: string, updates: Partial<Employee>) => void;
-  onAddSalary?: (payload: AddSalaryPayload) => void;
-  onAddTransaction?: (payload: AddTransactionPayload) => void;
+  onAddSalary?: (payload: AddSalaryPayload, onSuccess?: () => void) => void;
+  onEditSalary?: (
+    entryId: number,
+    payload: UpdateSalaryPayload,
+    onSuccess?: () => void
+  ) => void;
+  onDeleteSalary?: (entryId: number, onSuccess?: () => void) => void;
   isAddingSalary?: boolean;
-  isAddingTransaction?: boolean;
+  isEditingSalary?: boolean;
+  isDeletingSalary?: boolean;
 }
 
 export default function EmployeeViewModal({
@@ -74,38 +85,80 @@ export default function EmployeeViewModal({
   onClose,
   onUpdate,
   onAddSalary,
-  onAddTransaction,
+  onEditSalary,
+  onDeleteSalary,
   isAddingSalary = false,
-  isAddingTransaction = false,
+  isEditingSalary = false,
+  isDeletingSalary = false,
 }: EmployeeViewModalProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("details");
-  const [salaryDate, setSalaryDate] = useState("");
-  const [salaryAmount, setSalaryAmount] = useState("");
-  const [salaryDescription, setSalaryDescription] = useState("");
-  const [txDate, setTxDate] = useState("");
-  const [txAmount, setTxAmount] = useState("");
-  const [txDescription, setTxDescription] = useState("");
-  const [txType, setTxType] = useState("");
-  const [txReference, setTxReference] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [addSalaryModalOpen, setAddSalaryModalOpen] = useState(false);
+  const [entryToEdit, setEntryToEdit] = useState<EmployeeSalaryEntry | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<EmployeeSalaryEntry | null>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<EmployeeDocument | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<{
+    name: string;
+    url: string | null;
+    filename: string;
+  } | null>(null);
+  const [uploadName, setUploadName] = useState("");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  const employeeIdNum = employee ? Number(employee.id) : null;
+
+  const { data: employeeDocuments = [], isLoading: documentsLoading } = useQuery({
+    queryKey: ["employee-documents", employeeIdNum],
+    queryFn: () => fetchEmployeeDocuments(employeeIdNum!),
+    enabled: isOpen && employeeIdNum != null,
+  });
+  const uploadDocMutation = useMutation({
+    mutationFn: ({
+      employeeId,
+      file,
+      options,
+    }: {
+      employeeId: number;
+      file: File;
+      options?: { name?: string; description?: string };
+    }) => uploadEmployeeDocument(employeeId, file, options),
+    onSuccess: (_, { employeeId }) => {
+      queryClient.invalidateQueries({ queryKey: ["employee-documents", employeeId] });
+      setUploadFile(null);
+      setUploadName("");
+      setUploadDescription("");
+    },
+  });
+  const deleteDocMutation = useMutation({
+    mutationFn: ({
+      employeeId,
+      documentId,
+    }: { employeeId: number; documentId: number }) =>
+      deleteEmployeeDocument(employeeId, documentId),
+    onSuccess: (_, { employeeId }) => {
+      queryClient.invalidateQueries({ queryKey: ["employee-documents", employeeId] });
+      setDocumentToDelete(null);
+    },
+  });
 
   if (!employee) return null;
 
+  const handleConfirmDeleteDocument = () => {
+    if (documentToDelete && employeeIdNum != null)
+      deleteDocMutation.mutate({
+        employeeId: employeeIdNum,
+        documentId: documentToDelete.id,
+      });
+  };
+
   const salaryEntries: EmployeeSalaryEntry[] = employee.salaryEntries ?? [];
-  const transactions: EmployeeTransaction[] = employee.transactions ?? [];
   const sortedSalaries = [...salaryEntries].sort(
     (a, b) => b.date.localeCompare(a.date)
   );
-  const sortedTransactions = [...transactions].sort(
-    (a, b) => b.date.localeCompare(a.date)
-  );
-
-  const totalSalary =
-    (employee.basicSalary ?? 0) +
-    (employee.housingAllowance ?? 0) +
-    (employee.transportationAllowance ?? 0) +
-    (employee.otherAllowances ?? 0);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -167,259 +220,80 @@ export default function EmployeeViewModal({
           </section>
         )}
 
-        {activeTab === "identification" && (
-          <section className="space-y-6">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Identification
-            </h3>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="QID number" value={employee.qidNumber} />
-              <Field
-                label="QID expiry date"
-                value={
-                  employee.qidExpiryDate
-                    ? formatDate(employee.qidExpiryDate)
-                    : undefined
-                }
-              />
-              <Field label="Passport number" value={employee.passportNumber} />
-              <Field
-                label="Passport expiry date"
-                value={
-                  employee.passportExpiryDate
-                    ? formatDate(employee.passportExpiryDate)
-                    : undefined
-                }
-              />
-              <Field label="Visa number" value={employee.visaNumber} />
-              <Field
-                label="Visa expiry date"
-                value={
-                  employee.visaExpiryDate
-                    ? formatDate(employee.visaExpiryDate)
-                    : undefined
-                }
-              />
-              <Field
-                label="Sponsorship type"
-                value={
-                  employee.sponsorshipType != null
-                    ? SPONSORSHIP_LABELS[employee.sponsorshipType]
-                    : undefined
-                }
-              />
-            </dl>
-          </section>
-        )}
-
-        {activeTab === "employment" && (
-          <section className="space-y-6">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Employment details
-            </h3>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Employee ID (internal)" value={employee.employeeId} />
-              <Field
-                label="Joining date"
-                value={
-                  employee.joiningDate
-                    ? formatDate(employee.joiningDate)
-                    : undefined
-                }
-              />
-              <Field
-                label="Employment type"
-                value={
-                  employee.employmentType != null
-                    ? EMPLOYMENT_TYPE_LABELS[employee.employmentType]
-                    : undefined
-                }
-              />
-              <Field label="Job title" value={employee.jobTitle} />
-              <Field label="Department" value={employee.department} />
-              <Field
-                label="Employment status"
-                value={
-                  employee.employmentStatus != null ? (
-                    <span
-                      className={
-                        employee.employmentStatus === 0
-                          ? "inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : employee.employmentStatus === 1
-                            ? "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                            : "inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                      }
-                    >
-                      {EMPLOYMENT_STATUS_LABELS[employee.employmentStatus]}
-                    </span>
-                  ) : undefined
-                }
-              />
-            </dl>
-          </section>
-        )}
-
-        {activeTab === "salary_wps" && (
-          <section className="space-y-6">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Salary structure
-            </h3>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="Basic salary"
-                value={
-                  employee.basicSalary != null
-                    ? formatCurrency(employee.basicSalary)
-                    : undefined
-                }
-              />
-              <Field
-                label="Housing allowance"
-                value={
-                  employee.housingAllowance != null
-                    ? formatCurrency(employee.housingAllowance)
-                    : undefined
-                }
-              />
-              <Field
-                label="Transportation allowance"
-                value={
-                  employee.transportationAllowance != null
-                    ? formatCurrency(employee.transportationAllowance)
-                    : undefined
-                }
-              />
-              <Field
-                label="Other allowances"
-                value={
-                  employee.otherAllowances != null
-                    ? formatCurrency(employee.otherAllowances)
-                    : undefined
-                }
-              />
-            </dl>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] p-4">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Total (QAR)
+        {(activeTab === "dashboard" ||
+          activeTab === "identification" ||
+          activeTab === "employment" ||
+          activeTab === "salary_wps" ||
+          activeTab === "medical_insurance") && (
+          <section className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-xl border border-amber-200 bg-amber-50/50 px-6 py-8 text-center dark:border-amber-800 dark:bg-amber-900/20">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Under development
               </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white tabular-nums">
-                {formatCurrency(totalSalary)}
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300/80">
+                This section is coming soon.
               </p>
             </div>
-
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pt-4 border-t border-gray-200 dark:border-gray-700">
-              Bank & WPS
-            </h3>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Bank name" value={employee.bankName} />
-              <Field label="IBAN" value={employee.iban} />
-            </dl>
-          </section>
-        )}
-
-        {activeTab === "medical_insurance" && (
-          <section className="space-y-6">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Medical & insurance
-            </h3>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="Health card number"
-                value={employee.healthCardNumber}
-              />
-              <Field
-                label="Health insurance policy"
-                value={employee.healthInsurancePolicy}
-              />
-              <Field
-                label="Insurance expiry"
-                value={
-                  employee.insuranceExpiry
-                    ? formatDate(employee.insuranceExpiry)
-                    : undefined
-                }
-              />
-              <Field
-                label="Emergency contact name"
-                value={employee.emergencyContactName}
-              />
-              <Field
-                label="Emergency contact phone"
-                value={employee.emergencyContactPhone}
-              />
-            </dl>
           </section>
         )}
 
         {activeTab === "salary_management" && (
           <section className="space-y-6">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Salary entries
-            </h3>
-            {onAddSalary && (
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] p-4 space-y-4">
-                <h4 className="text-sm font-medium text-gray-800 dark:text-white">
-                  Add salary entry
-                </h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Use description to identify type (e.g. Advance, Remaining amount, Bonus, Adjustment).
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Date</Label>
-                    <DatePicker
-                      id="salary-entry-date"
-                      placeholder="Select date"
-                      value={salaryDate}
-                      onChange={(_, dateStr) => setSalaryDate(dateStr ?? "")}
-                    />
-                  </div>
-                  <div>
-                    <Label>Amount (QAR)</Label>
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      className={inputClass}
-                      value={salaryAmount}
-                      onChange={(e) => setSalaryAmount(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <input
-                      type="text"
-                      className={inputClass}
-                      value={salaryDescription}
-                      onChange={(e) => setSalaryDescription(e.target.value)}
-                      placeholder="e.g. Advance, Bonus"
-                    />
-                  </div>
-                </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Salary entries
+              </h3>
+              {onAddSalary && (
                 <button
                   type="button"
-                  disabled={
-                    isAddingSalary ||
-                    !salaryDate ||
-                    !salaryAmount ||
-                    parseFloat(salaryAmount) < 0
-                  }
-                  onClick={() => {
-                    onAddSalary({
-                      date: salaryDate,
-                      amount: parseFloat(salaryAmount) || 0,
-                      description: salaryDescription.trim() || undefined,
-                    });
-                    setSalaryDate("");
-                    setSalaryAmount("");
-                    setSalaryDescription("");
-                  }}
-                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
+                  onClick={() => setAddSalaryModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
                 >
-                  {isAddingSalary ? "Adding…" : "Add entry"}
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add salary
                 </button>
-              </div>
+              )}
+            </div>
+            {(onAddSalary || onEditSalary) && (
+              <AddSalaryEntryModal
+                isOpen={addSalaryModalOpen || !!entryToEdit}
+                onClose={() => {
+                  setAddSalaryModalOpen(false);
+                  setEntryToEdit(null);
+                }}
+                employeeName={employee.fullName}
+                entryToEdit={entryToEdit}
+                onSubmit={(payload) => {
+                  onAddSalary?.(payload, () => {
+                    setAddSalaryModalOpen(false);
+                  });
+                }}
+                onUpdate={
+                  onEditSalary
+                    ? (entryId, payload) => {
+                        onEditSalary(entryId, payload, () => {
+                          setEntryToEdit(null);
+                        });
+                      }
+                    : undefined
+                }
+                isSubmitting={isAddingSalary || isEditingSalary}
+              />
+            )}
+            {onDeleteSalary && (
+              <ConfirmDeleteModal
+                isOpen={!!entryToDelete}
+                onClose={() => setEntryToDelete(null)}
+                onConfirm={() => {
+                  if (entryToDelete) {
+                    onDeleteSalary(entryToDelete.id, () => setEntryToDelete(null));
+                  }
+                }}
+                title="Delete salary entry"
+                message="Are you sure you want to delete this draft salary entry? This action cannot be undone."
+              />
             )}
             {sortedSalaries.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400 py-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-center">
@@ -441,6 +315,33 @@ export default function EmployeeViewModal({
                     <span className="text-gray-500 dark:text-gray-400 w-full sm:w-auto">
                       {se.description || "—"}
                     </span>
+                    {(se.paymentMethodDisplay || se.statusDisplay) && (
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        {[se.paymentMethodDisplay, se.statusDisplay].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                    {se.status === "draft" && (onEditSalary || onDeleteSalary) && (
+                      <div className="flex items-center gap-1 ml-auto">
+                        {onEditSalary && (
+                          <button
+                            type="button"
+                            onClick={() => setEntryToEdit(se)}
+                            className="rounded px-2 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-500/10"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {onDeleteSalary && (
+                          <button
+                            type="button"
+                            onClick={() => setEntryToDelete(se)}
+                            className="rounded px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -451,169 +352,348 @@ export default function EmployeeViewModal({
         {activeTab === "financial" && (
           <section className="space-y-6">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Transactions (company – employee)
+              Financial overview
             </h3>
-            {onAddTransaction && (
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] p-4 space-y-4">
-                <h4 className="text-sm font-medium text-gray-800 dark:text-white">
-                  Add transaction
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <Label>Date</Label>
-                    <DatePicker
-                      id="tx-date"
-                      placeholder="Select date"
-                      value={txDate}
-                      onChange={(_, dateStr) => setTxDate(dateStr ?? "")}
-                    />
-                  </div>
-                  <div>
-                    <Label>Amount (QAR)</Label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className={inputClass}
-                      value={txAmount}
-                      onChange={(e) => setTxAmount(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <Label>Type</Label>
-                    <input
-                      type="text"
-                      className={inputClass}
-                      value={txType}
-                      onChange={(e) => setTxType(e.target.value)}
-                      placeholder="e.g. salary_payment, advance"
-                    />
-                  </div>
-                  <div>
-                    <Label>Reference</Label>
-                    <input
-                      type="text"
-                      className={inputClass}
-                      value={txReference}
-                      onChange={(e) => setTxReference(e.target.value)}
-                      placeholder="Optional"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label>Description</Label>
-                  <input
-                    type="text"
-                    className={inputClass}
-                    value={txDescription}
-                    onChange={(e) => setTxDescription(e.target.value)}
-                    placeholder="Optional"
-                  />
-                </div>
-                <button
-                  type="button"
-                  disabled={
-                    isAddingTransaction ||
-                    !txDate ||
-                    !txAmount ||
-                    parseFloat(txAmount) === 0
-                  }
-                  onClick={() => {
-                    onAddTransaction({
-                      date: txDate,
-                      amount: parseFloat(txAmount) || 0,
-                      description: txDescription.trim() || undefined,
-                      transaction_type: txType.trim() || undefined,
-                      reference: txReference.trim() || undefined,
-                    });
-                    setTxDate("");
-                    setTxAmount("");
-                    setTxDescription("");
-                    setTxType("");
-                    setTxReference("");
-                  }}
-                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  {isAddingTransaction ? "Adding…" : "Add transaction"}
-                </button>
-              </div>
-            )}
-            {sortedTransactions.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400 py-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-center">
-                No transactions yet.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {sortedTransactions.map((tx) => (
-                  <li
-                    key={tx.id}
-                    className="flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-white/[0.03] px-3 py-2 text-sm"
-                  >
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {formatDate(tx.date)}
-                    </span>
-                    <span
-                      className={`tabular-nums font-medium ${
-                        tx.amount >= 0
-                          ? "text-success-600 dark:text-success-400"
-                          : "text-error-600 dark:text-error-400"
-                      }`}
+
+            <div>
+              <h4 className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Salary entries
+              </h4>
+              {sortedSalaries.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-gray-300 py-4 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+                  No salary entries.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {sortedSalaries.map((se) => (
+                    <li
+                      key={`salary-${se.id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-white/[0.03]"
                     >
-                      {tx.amount >= 0 ? "" : "-"}
-                      {formatCurrency(Math.abs(tx.amount))}
-                    </span>
-                    {tx.transactionType && (
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {tx.transactionType}
+                      <span className="text-gray-700 dark:text-gray-300">
+                        {formatDate(se.date)}
                       </span>
-                    )}
-                    <span className="text-gray-600 dark:text-gray-300 flex-1 min-w-0 truncate">
-                      {tx.description || tx.reference || "—"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+                      <span className="font-medium tabular-nums text-gray-900 dark:text-white">
+                        {formatCurrency(se.amount)}
+                      </span>
+                      <span className="w-full text-gray-500 dark:text-gray-400 sm:w-auto">
+                        {se.description || "—"}
+                      </span>
+                      {(se.paymentMethodDisplay || se.statusDisplay) && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {[se.paymentMethodDisplay, se.statusDisplay]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </section>
         )}
 
         {activeTab === "documents" && (
-          <section className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Documents
-            </h3>
-            {employee.documents && employee.documents.length > 0 ? (
-              <ul className="space-y-2">
-                {employee.documents.map((doc) => (
+          <div className="w-full space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Documents
+              </h3>
+            </div>
+            {documentsLoading ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                Loading documents…
+              </p>
+            ) : employeeDocuments.length > 0 ? (
+              <ul className="space-y-2 w-full">
+                {employeeDocuments.map((doc) => (
                   <li
                     key={doc.id}
-                    className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.03] px-3 py-2 text-sm text-gray-700 dark:text-gray-300"
+                    className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 w-full rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2"
                   >
-                    <svg
-                      className="h-5 w-5 text-gray-400 shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
+                    <span
+                      className="min-w-0 truncate flex-1"
+                      title={doc.description || undefined}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    {doc.name}
+                      {doc.name || doc.filename}
+                    </span>
+                    {doc.size != null && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                        {(doc.size / 1024).toFixed(1)} KB
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                      {formatDate(doc.created_at.slice(0, 10))}
+                    </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPreviewDocument({
+                            name: doc.name || doc.filename,
+                            url: doc.file_url ?? null,
+                            filename: doc.filename || doc.name || "document",
+                          })
+                        }
+                        title="View"
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          downloadEmployeeDocument(
+                            employeeIdNum!,
+                            doc.id,
+                            doc.filename || doc.name || "document"
+                          )
+                        }
+                        title="Download"
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                      </button>
+                      {doc.file_url && (
+                        <a
+                          href={doc.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                          title="Open in new tab"
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                            />
+                          </svg>
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setDocumentToDelete(doc)}
+                        disabled={deleteDocMutation.isPending}
+                        title="Delete"
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-white/10 dark:hover:text-red-400 disabled:opacity-50"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
-                No documents uploaded yet.
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                No documents yet. Upload one below.
               </p>
             )}
-          </section>
+            {onUpdate && (
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-white/[0.02] p-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Upload document
+                </h4>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!uploadFile || employeeIdNum == null) return;
+                    uploadDocMutation.mutate({
+                      employeeId: employeeIdNum,
+                      file: uploadFile,
+                      options: {
+                        name: uploadName.trim() || undefined,
+                        description: uploadDescription.trim() || undefined,
+                      },
+                    });
+                  }}
+                  className="space-y-3"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      setUploadFile(file ?? null);
+                      if (file && !uploadName) setUploadName(file.name);
+                    }}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      Choose file
+                    </button>
+                    {uploadFile && (
+                      <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[200px]">
+                        {uploadFile.name}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                      Name (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={uploadName}
+                      onChange={(e) => setUploadName(e.target.value)}
+                      className="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                      placeholder="Document name"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                      Description (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={uploadDescription}
+                      onChange={(e) => setUploadDescription(e.target.value)}
+                      className="h-9 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                      placeholder="Description"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!uploadFile || uploadDocMutation.isPending}
+                    className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                  >
+                    {uploadDocMutation.isPending ? "Uploading…" : "Upload"}
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </Modal>
+
+    <ConfirmDeleteModal
+      isOpen={!!documentToDelete}
+      onClose={() => setDocumentToDelete(null)}
+      onConfirm={handleConfirmDeleteDocument}
+      title="Delete document"
+      itemName={documentToDelete?.name || documentToDelete?.filename}
+    />
+    <Modal
+      isOpen={!!previewDocument}
+      onClose={() => setPreviewDocument(null)}
+      className="max-w-[95vw] w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+    >
+      {previewDocument && (
+        <div className="flex flex-col flex-1 min-h-0 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 truncate pr-10" title={previewDocument.name}>
+            {previewDocument.name}
+          </h3>
+          <div className="flex-1 min-h-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 overflow-hidden flex items-center justify-center">
+            {previewDocument.url ? (
+              (() => {
+                const nameForExt = previewDocument.filename || previewDocument.name;
+                const ext = nameForExt.split(".").pop()?.toLowerCase();
+                const isPdf = ext === "pdf";
+                const isImage = ["png", "jpg", "jpeg", "gif", "webp"].includes(ext ?? "");
+                if (isPdf)
+                  return (
+                    <object
+                      data={previewDocument.url}
+                      type="application/pdf"
+                      className="w-full h-[70vh] min-h-[400px] border-0 rounded-lg"
+                      title={previewDocument.name}
+                    />
+                  );
+                if (isImage)
+                  return (
+                    <img
+                      src={previewDocument.url}
+                      alt={previewDocument.name}
+                      className="max-w-full max-h-[70vh] object-contain"
+                    />
+                  );
+                return (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <a href={previewDocument.url} target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 font-medium hover:underline">
+                      Open in new tab
+                    </a>
+                    {" or "}
+                    <a href={previewDocument.url} download={previewDocument.filename} className="text-brand-600 dark:text-brand-400 font-medium hover:underline">
+                      Download
+                    </a>
+                  </p>
+                );
+              })()
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No preview available.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </Modal>
+    </>
   );
 }

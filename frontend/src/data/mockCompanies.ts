@@ -1,32 +1,32 @@
 import type { Company } from "@/types/company";
 
 export const MOCK_CLIENTS: Company[] = [
-  { id: "c1", name: "Acme Corp" },
-  { id: "c2", name: "Metro City Council" },
-  { id: "c3", name: "Greenfield Developers" },
-  { id: "c4", name: "Summit Construction Co" },
-  { id: "c5", name: "Riverside Holdings" },
-  { id: "c6", name: "Northern Builders Ltd" },
-  { id: "c7", name: "Delta Properties" },
+  { id: 1, name: "Acme Corp" },
+  { id: 2, name: "Metro City Council" },
+  { id: 3, name: "Greenfield Developers" },
+  { id: 4, name: "Summit Construction Co" },
+  { id: 5, name: "Riverside Holdings" },
+  { id: 6, name: "Northern Builders Ltd" },
+  { id: 7, name: "Delta Properties" },
 ];
 
 export const MOCK_SUPPLIERS: Company[] = [
-  { id: "s1", name: "Gulf Steel Supplies" },
-  { id: "s2", name: "Premier Cement Co" },
-  { id: "s3", name: "National Lumber & Hardware" },
-  { id: "s4", name: "Elite Electrical Wholesale" },
-  { id: "s5", name: "Quality Tiles & Marble" },
-  { id: "s6", name: "Fast Plumbing Supplies" },
+  { id: 11, name: "Gulf Steel Supplies" },
+  { id: 12, name: "Premier Cement Co" },
+  { id: 13, name: "National Lumber & Hardware" },
+  { id: 14, name: "Elite Electrical Wholesale" },
+  { id: 15, name: "Quality Tiles & Marble" },
+  { id: 16, name: "Fast Plumbing Supplies" },
 ];
 
 export const MOCK_SUBCONTRACTS: Company[] = [
-  { id: "sc1", name: "Alpha Electrical Contractors" },
-  { id: "sc2", name: "Precision Plumbing Services" },
-  { id: "sc3", name: "SafeGuard HVAC" },
-  { id: "sc4", name: "Pro Paint & Finish" },
-  { id: "sc5", name: "GroundWorks Excavation" },
-  { id: "sc6", name: "SteelFrame Structures" },
-  { id: "sc7", name: "City Glass & Glazing" },
+  { id: 21, name: "Alpha Electrical Contractors" },
+  { id: 22, name: "Precision Plumbing Services" },
+  { id: 23, name: "SafeGuard HVAC" },
+  { id: 24, name: "Pro Paint & Finish" },
+  { id: 25, name: "GroundWorks Excavation" },
+  { id: 26, name: "SteelFrame Structures" },
+  { id: 27, name: "City Glass & Glazing" },
 ];
 
 const COMPANY_DATA = {

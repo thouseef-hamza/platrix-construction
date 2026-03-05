@@ -23,5 +23,6 @@
   {"code": "5060", "name": "Salaries and Wages", "account_type": 5, "parent_code": "5000"},
   {"code": "5070", "name": "Rent Expense", "account_type": 5, "parent_code": "5000"},
   {"code": "5080", "name": "Other Expense", "account_type": 5, "parent_code": "5000"},
-  {"code": "5090", "name": "Operating Expense", "account_type": 5, "parent_code": "5000"}
+  {"code": "5090", "name": "Operating Expense", "account_type": 5, "parent_code": "5000"},
+  {"code": "5095", "name": "Petrol Expense", "account_type": 5, "parent_code": "5000"}
 ]

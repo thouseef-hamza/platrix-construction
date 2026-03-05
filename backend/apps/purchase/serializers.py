@@ -1,5 +1,7 @@
+import re
 from decimal import Decimal
 
+from django.db.models import Sum
 from rest_framework import serializers
 
 from apps.core.models import Document
@@ -14,6 +16,37 @@ from .constants import (
     PURCHASE_STATUS_POSTED,
 )
 from .models import Purchase, PurchaseLineItem, PurchasePayment
+
+
+def _generate_purchase_reference(account, date):
+    """Generate a unique reference PO-YYYYMMDD-NNNN for the given account and date."""
+    if hasattr(date, "strftime"):
+        date_str = date.strftime("%Y%m%d")
+    else:
+        date_str = str(date).replace("-", "")[:8]
+    account_id = getattr(account, "pk", account) if account else None
+    if account_id is None:
+        return f"PO-{date_str}-0001"
+    existing_refs = Purchase.objects.filter(
+        account_id=account_id, date=date
+    ).values_list("reference", flat=True)
+    pattern = re.compile(r"^PO-\d{8}-(\d{4})$")
+    numbers = []
+    for ref in existing_refs:
+        if ref:
+            m = pattern.match(ref.strip())
+            if m:
+                numbers.append(int(m.group(1)))
+    next_seq = max(numbers, default=0) + 1
+    return f"PO-{date_str}-{next_seq:04d}"
+
+
+def _reference_is_empty(ref):
+    """True if reference should be treated as unset (empty or placeholder)."""
+    if ref is None:
+        return True
+    s = (ref if isinstance(ref, str) else str(ref)).strip()
+    return not s or s == "—" or s == "-"
 
 
 class PurchaseLineItemReadSerializer(serializers.ModelSerializer):
@@ -85,6 +118,39 @@ class PurchasePaymentWriteSerializer(serializers.ModelSerializer):
         if value is not None and value <= 0:
             raise serializers.ValidationError("Amount must be positive.")
         return value
+
+    def validate(self, attrs):
+        purchase = self.context.get("purchase") or (
+            self.instance.purchase if self.instance else None
+        )
+        if not purchase:
+            return attrs
+
+        amount = attrs.get("amount")
+        if amount is None and self.instance:
+            amount = self.instance.amount
+        if amount is None:
+            return attrs
+
+        amount = Decimal(str(amount))
+        other_payments = purchase.payments.filter(is_deleted=False)
+        if self.instance:
+            other_payments = other_payments.exclude(pk=self.instance.pk)
+        total_other = (
+            other_payments.aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        )
+        purchase_amount = getattr(purchase, "amount", None) or Decimal("0.00")
+        if isinstance(purchase_amount, (int, float)):
+            purchase_amount = Decimal(str(purchase_amount))
+
+        if total_other + amount > purchase_amount:
+            raise serializers.ValidationError(
+                {
+                    "amount": "Payment amount cannot exceed the remaining balance due. "
+                    "Total payments must not exceed the purchase amount."
+                }
+            )
+        return attrs
 
 
 class PurchaseListSerializer(serializers.ModelSerializer):
@@ -218,6 +284,7 @@ class PurchaseWriteSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "amount", "payment_status", "created_at", "updated_at")
+        extra_kwargs = {"reference": {"required": False, "allow_blank": True}}
 
     def validate_line_items(self, value):
         if not value:
@@ -230,28 +297,36 @@ class PurchaseWriteSerializer(serializers.ModelSerializer):
         account_id = attrs.get("account")
         if account_id is not None:
             account_id = getattr(account_id, "pk", account_id)
+        elif self.instance is not None:
+            account_id = getattr(self.instance, "account_id", None)
         supplier = attrs.get("supplier")
         project = attrs.get("project")
-        if supplier and getattr(supplier, "account_id", None) != account_id:
-            raise serializers.ValidationError(
-                {"supplier": "Supplier must belong to the same account."}
-            )
-        if project and getattr(project, "account_id", None) != account_id:
-            raise serializers.ValidationError(
-                {"project": "Project must belong to the same account."}
-            )
-        line_items = attrs.get("line_items", [])
-        for i, line in enumerate(line_items):
-            mat = line.get("material")
-            if mat and getattr(mat, "account_id", None) != account_id:
+        if account_id is not None:
+            if supplier and getattr(supplier, "account_id", None) != account_id:
                 raise serializers.ValidationError(
-                    {"line_items": f"Line {i + 1}: material must belong to the same account."}
+                    {"supplier": "Supplier must belong to the same account."}
                 )
+            if project is not None and getattr(project, "account_id", None) != account_id:
+                raise serializers.ValidationError(
+                    {"project": "Project must belong to the same account."}
+                )
+            line_items = attrs.get("line_items", [])
+            for i, line in enumerate(line_items):
+                mat = line.get("material")
+                if mat and getattr(mat, "account_id", None) != account_id:
+                    raise serializers.ValidationError(
+                        {"line_items": f"Line {i + 1}: material must belong to the same account."}
+                    )
         return attrs
 
     def create(self, validated_data):
         line_items_data = validated_data.pop("line_items")
         initial_paid = validated_data.pop("paid_amount", None)
+        if _reference_is_empty(validated_data.get("reference")):
+            validated_data["reference"] = _generate_purchase_reference(
+                validated_data.get("account"),
+                validated_data.get("date"),
+            )
         purchase = Purchase.objects.create(
             **validated_data,
             amount=Decimal("0.00"),
@@ -272,18 +347,26 @@ class PurchaseWriteSerializer(serializers.ModelSerializer):
             )
         purchase.amount = total
         purchase.save(update_fields=["amount"])
-        if initial_paid is not None and initial_paid > 0:
-            payment_status = (
-                PAYMENT_LEDGER_POSTED
-                if purchase.status == PURCHASE_STATUS_POSTED
-                else PAYMENT_LEDGER_DRAFT
-            )
+        # When drafting, store paid_amount on the purchase (no payment line). When posted, create payment.
+        if purchase.status == PURCHASE_STATUS_DRAFT:
+            if initial_paid is not None:
+                purchase.paid_amount = initial_paid
+                purchase.save(update_fields=["paid_amount"])
+        elif (
+            initial_paid is not None
+            and initial_paid > 0
+            and purchase.status == PURCHASE_STATUS_POSTED
+        ):
+            if initial_paid > purchase.amount:
+                raise serializers.ValidationError(
+                    {"paid_amount": "Paid amount cannot exceed total amount."}
+                )
             PurchasePayment.objects.create(
                 purchase=purchase,
                 date=purchase.date,
                 amount=initial_paid,
                 reference="",
-                status=payment_status,
+                status=PAYMENT_LEDGER_POSTED,
             )
             _recompute_payment_status(purchase)
         return purchase
@@ -293,10 +376,18 @@ class PurchaseWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Posted purchases cannot be edited."
             )
-        validated_data.pop("paid_amount", None)  # ignore if sent; computed from payments
+        initial_paid = validated_data.pop("paid_amount", None)
         line_items_data = validated_data.pop("line_items", None)
         for key, value in validated_data.items():
             setattr(instance, key, value)
+        if _reference_is_empty(instance.reference):
+            instance.reference = _generate_purchase_reference(
+                instance.account_id,
+                instance.date,
+            )
+        # For drafts, persist paid_amount on the purchase (no payment line).
+        if initial_paid is not None and instance.status == PURCHASE_STATUS_DRAFT:
+            instance.paid_amount = initial_paid
         if line_items_data is not None:
             if instance.status != PURCHASE_STATUS_DRAFT:
                 raise serializers.ValidationError(
@@ -318,6 +409,26 @@ class PurchaseWriteSerializer(serializers.ModelSerializer):
                 )
             instance.amount = total
         instance.save()
+        # When posting, create payment: use initial_paid from request if provided, else existing instance.paid_amount (stored from draft).
+        if instance.status == PURCHASE_STATUS_POSTED:
+            amount_to_pay = None
+            if initial_paid is not None and initial_paid > 0:
+                amount_to_pay = initial_paid
+            elif (instance.paid_amount or Decimal("0.00")) > 0:
+                amount_to_pay = instance.paid_amount
+            if amount_to_pay is not None and amount_to_pay > 0:
+                if amount_to_pay > instance.amount:
+                    raise serializers.ValidationError(
+                        {"paid_amount": "Paid amount cannot exceed total amount."}
+                    )
+                PurchasePayment.objects.create(
+                    purchase=instance,
+                    date=instance.date,
+                    amount=amount_to_pay,
+                    reference="",
+                    status=PAYMENT_LEDGER_POSTED,
+                )
+                _recompute_payment_status(instance)
         return instance
 
 

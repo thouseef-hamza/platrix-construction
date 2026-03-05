@@ -19,6 +19,7 @@ import {
   deleteProjectDocument,
   downloadProjectDocument,
   fetchProjectDocuments,
+  fetchProjectFinancials,
   uploadProjectDocument,
   type ProjectDocument,
 } from "@/lib/projectsApi";
@@ -34,14 +35,6 @@ import {
 } from "@/types/project";
 
 type Tab = "dashboard" | "details" | "documents" | "financial" | "notes" | "activity";
-
-interface MockTransaction {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  type: "income" | "expense";
-}
 
 function formatBudget(value: number): string {
   return new Intl.NumberFormat("en-QA", {
@@ -106,29 +99,30 @@ interface ProjectViewModalProps {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function useProjectFinancials(budget: number) {
+function useMonthlyBreakdown(transactions: { date: string; amount: number; type: string }[]) {
   return useMemo(() => {
-    const income = Math.round(budget * 0.72);
-    const expenses = Math.round(budget * 0.48);
-    const variation = income - expenses;
-    const invoiceRef = [400, 370, 500, 470, 590, 550, 610, 580, 630, 710, 660, 750];
-    const expenseRef = [280, 320, 280, 320, 350, 380, 300, 410, 390, 430, 420, 480];
-    const monthlyInvoices = invoiceRef.map((v) => Math.round((v / 750) * income));
-    const monthlyExpenses = expenseRef.map((v) => Math.round((v / 480) * expenses));
-    const recentTransactions: MockTransaction[] = [
-      { id: "1", date: new Date().toISOString().slice(0, 10), description: "Progress payment #3", amount: 180000, type: "income" },
-      { id: "2", date: new Date(Date.now() - 86400000 * 2).toISOString().slice(0, 10), description: "Material purchase", amount: -42000, type: "expense" },
-      { id: "3", date: new Date(Date.now() - 86400000 * 5).toISOString().slice(0, 10), description: "Progress payment #2", amount: 150000, type: "income" },
-      { id: "4", date: new Date(Date.now() - 86400000 * 8).toISOString().slice(0, 10), description: "Labour costs", amount: -35000, type: "expense" },
-      { id: "5", date: new Date(Date.now() - 86400000 * 12).toISOString().slice(0, 10), description: "Advance received", amount: 200000, type: "income" },
-    ];
-    const financialTransactions: MockTransaction[] = [
-      ...recentTransactions,
-      { id: "6", date: new Date(Date.now() - 86400000 * 15).toISOString().slice(0, 10), description: "Equipment hire", amount: -28000, type: "expense" },
-      { id: "7", date: new Date(Date.now() - 86400000 * 18).toISOString().slice(0, 10), description: "Subcontractor invoice", amount: -55000, type: "expense" },
-    ].sort((a, b) => b.date.localeCompare(a.date));
-    return { income, expenses, variation, recentTransactions, financialTransactions, monthlyInvoices, monthlyExpenses };
-  }, [budget]);
+    const byMonth: Record<string, { income: number; expense: number }> = {};
+    MONTHS.forEach((_, i) => {
+      const key = `${new Date().getFullYear()}-${String(i + 1).padStart(2, "0")}`;
+      byMonth[key] = { income: 0, expense: 0 };
+    });
+    transactions.forEach((t) => {
+      const key = t.date.slice(0, 7);
+      if (!byMonth[key]) byMonth[key] = { income: 0, expense: 0 };
+      if (t.type === "income" && t.amount > 0) byMonth[key].income += t.amount;
+      if (t.type === "expense" && t.amount < 0) byMonth[key].expense += Math.abs(t.amount);
+    });
+    return {
+      monthlyInvoices: MONTHS.map((_, i) => {
+        const key = `${new Date().getFullYear()}-${String(i + 1).padStart(2, "0")}`;
+        return byMonth[key]?.income ?? 0;
+      }),
+      monthlyExpenses: MONTHS.map((_, i) => {
+        const key = `${new Date().getFullYear()}-${String(i + 1).padStart(2, "0")}`;
+        return byMonth[key]?.expense ?? 0;
+      }),
+    };
+  }, [transactions]);
 }
 
 export default function ProjectViewModal({
@@ -155,6 +149,14 @@ export default function ProjectViewModal({
   } = useQuery({
     queryKey: ["project-documents", projectIdNum],
     queryFn: () => fetchProjectDocuments(projectIdNum!),
+    enabled: isOpen && projectIdNum != null,
+  });
+  const {
+    data: financials,
+    isLoading: financialsLoading,
+  } = useQuery({
+    queryKey: ["project-financials", projectIdNum],
+    queryFn: () => fetchProjectFinancials(projectIdNum!),
     enabled: isOpen && projectIdNum != null,
   });
   const uploadDocMutation = useMutation({
@@ -191,7 +193,12 @@ export default function ProjectViewModal({
   });
 
   const budget = project?.budget ?? 0;
-  const { income, expenses, variation, recentTransactions, financialTransactions, monthlyInvoices, monthlyExpenses } = useProjectFinancials(budget);
+  const income = financials?.income ?? 0;
+  const expenses = financials?.expense ?? 0;
+  const variation = financials?.variation ?? 0;
+  const financialTransactions = financials?.transactions ?? [];
+  const recentTransactions = financialTransactions.slice(0, 5);
+  const { monthlyInvoices, monthlyExpenses } = useMonthlyBreakdown(financialTransactions);
   const comments = project?.comments ?? [];
   const activities = project?.activities ?? [];
   const feedItems: FeedItem[] = useMemo(() => {
@@ -329,10 +336,6 @@ export default function ProjectViewModal({
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</p>
                         <p className="mt-1 text-xl font-bold text-gray-900 dark:text-white tabular-nums truncate">{formatBudget(income)}</p>
-                        <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-success-600 dark:text-success-400">
-                          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                          {budgetChangePercent}%
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -346,10 +349,6 @@ export default function ProjectViewModal({
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Expense</p>
                         <p className="mt-1 text-xl font-bold text-gray-900 dark:text-white tabular-nums truncate">{formatBudget(expenses)}</p>
-                        <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-error-600 dark:text-error-400">
-                          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-                          9.05%
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -401,14 +400,20 @@ export default function ProjectViewModal({
             <div className="w-full rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
               <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Recent transactions</h3>
               <ul className="space-y-2">
-                {recentTransactions.slice(0, 5).map((tx) => (
+                {financialsLoading ? (
+                  <li className="text-sm text-gray-500 dark:text-gray-400 py-2">Loading…</li>
+                ) : recentTransactions.length === 0 ? (
+                  <li className="text-sm text-gray-500 dark:text-gray-400 py-2">No payment entries yet.</li>
+                ) : (
+                recentTransactions.slice(0, 5).map((tx) => (
                   <li key={tx.id} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                    <span className="text-gray-700 dark:text-gray-300">{tx.description}</span>
-                    <span className={`tabular-nums ${tx.type === "income" ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
-                      {tx.type === "income" ? "+" : ""}{formatBudget(tx.type === "income" ? tx.amount : -tx.amount)}
+                    <span className="text-gray-700 dark:text-gray-300 truncate mr-2">{tx.description}</span>
+                    <span className={`tabular-nums shrink-0 ${tx.type === "income" ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
+                      {tx.type === "income" ? "+" : "-"}{formatBudget(tx.type === "income" ? tx.amount : Math.abs(tx.amount))}
                     </span>
                   </li>
-                ))}
+                ))
+                )}
               </ul>
             </div>
           </div>
@@ -603,55 +608,72 @@ export default function ProjectViewModal({
         {/* Financial */}
         {activeTab === "financial" && (
           <div className="space-y-6 w-full">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 w-full">
-              <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Income</p>
-                <p className="mt-2 text-2xl font-semibold text-success-600 dark:text-success-400 tabular-nums">
-                  {formatBudget(income)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Expenses</p>
-                <p className="mt-2 text-2xl font-semibold text-error-600 dark:text-error-400 tabular-nums">
-                  {formatBudget(expenses)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Variation</p>
-                <p className={`mt-2 text-2xl font-semibold tabular-nums ${variation >= 0 ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
-                  {variation >= 0 ? "+" : ""}{formatBudget(variation)}
-                </p>
-              </div>
-            </div>
-            <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
-              <h3 className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-white bg-gray-50 dark:bg-white/[0.04] border-b border-gray-200 dark:border-gray-800">
-                Financial transactions
-              </h3>
-              <Table>
-                <TableHeader className="border-b border-gray-200 dark:border-gray-800">
-                  <TableRow>
-                    <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Date</TableCell>
-                    <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Description</TableCell>
-                    <TableCell isHeader className="px-4 py-3 text-right text-theme-xs font-medium text-gray-500 dark:text-gray-400">Amount</TableCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {financialTransactions.map((tx) => (
-                    <TableRow key={tx.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
-                      <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {new Date(tx.date + "Z").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {tx.description}
-                      </TableCell>
-                      <TableCell className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${tx.type === "income" ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
-                        {tx.type === "income" ? "+" : ""}{formatBudget(tx.type === "income" ? tx.amount : -tx.amount)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            {financialsLoading ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-8">Loading financial data…</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 w-full">
+                  <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Income</p>
+                    <p className="mt-2 text-2xl font-semibold text-success-600 dark:text-success-400 tabular-nums">
+                      {formatBudget(income)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">From client invoice payments</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Expense</p>
+                    <p className="mt-2 text-2xl font-semibold text-error-600 dark:text-error-400 tabular-nums">
+                      {formatBudget(expenses)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Subcontractor, expenses, purchases</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Variation</p>
+                    <p className={`mt-2 text-2xl font-semibold tabular-nums ${variation >= 0 ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
+                      {variation >= 0 ? "+" : ""}{formatBudget(variation)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Income − Expense</p>
+                  </div>
+                </div>
+                <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+                  <h3 className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-white bg-gray-50 dark:bg-white/[0.04] border-b border-gray-200 dark:border-gray-800">
+                    Financial transactions (payment entries)
+                  </h3>
+                  <Table>
+                    <TableHeader className="border-b border-gray-200 dark:border-gray-800">
+                      <TableRow>
+                        <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Date</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Description</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-right text-theme-xs font-medium text-gray-500 dark:text-gray-400">Amount</TableCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {financialTransactions.length === 0 ? (
+                        <TableRow>
+                          <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                            No payment entries yet for this project.
+                          </td>
+                        </TableRow>
+                      ) : (
+                        financialTransactions.map((tx) => (
+                          <TableRow key={tx.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                            <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                              {formatDate(tx.date)}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                              {tx.description}
+                            </TableCell>
+                            <TableCell className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${tx.type === "income" ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
+                              {tx.type === "income" ? "+" : "-"}{formatBudget(tx.type === "income" ? tx.amount : Math.abs(tx.amount))}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
           </div>
         )}
 

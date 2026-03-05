@@ -54,6 +54,10 @@ export interface ApiSalaryEntry {
   date: string;
   amount: string;
   description: string;
+  payment_method?: number;
+  payment_method_display?: string;
+  status?: number;
+  status_display?: string;
   created_at: string;
 }
 
@@ -110,6 +114,10 @@ function apiToEmployee(api: ApiEmployee): Employee {
       date: se.date,
       amount: parseFloat(se.amount) || 0,
       description: se.description || "",
+      paymentMethod: (se.payment_method ?? 0) === 0 ? "cash" : "bank",
+      paymentMethodDisplay: se.payment_method_display,
+      status: (se.status ?? 0) === 1 ? "posted" : "draft",
+      statusDisplay: se.status_display,
       createdAt: se.created_at,
     })),
     transactions: api.transactions?.map(t => ({
@@ -230,10 +238,17 @@ export async function updateEmployee(id: number, payload: Partial<Employee>): Pr
   return apiToEmployee(data);
 }
 
+const PAYMENT_METHOD_TO_BACKEND: Record<"cash" | "bank", number> = {
+  cash: 0,
+  bank: 1,
+};
+
 export interface AddSalaryPayload {
   date: string;
   amount: number;
   description?: string;
+  payment_method?: "cash" | "bank";
+  status?: "draft" | "posted";
 }
 
 export async function addEmployeeSalary(employeeId: number, payload: AddSalaryPayload): Promise<EmployeeSalaryEntry> {
@@ -241,14 +256,64 @@ export async function addEmployeeSalary(employeeId: number, payload: AddSalaryPa
     date: payload.date,
     amount: String(payload.amount),
     description: payload.description?.trim() ?? "",
+    payment_method: PAYMENT_METHOD_TO_BACKEND[payload.payment_method ?? "bank"],
+    status: payload.status === "posted" ? 1 : 0,
   });
   return {
     id: data.id,
     date: data.date,
     amount: parseFloat(data.amount) || 0,
     description: data.description || "",
+    paymentMethod: (data.payment_method ?? 0) === 0 ? "cash" : "bank",
+    paymentMethodDisplay: data.payment_method_display,
+    status: (data.status ?? 0) === 1 ? "posted" : "draft",
+    statusDisplay: data.status_display,
     createdAt: data.created_at,
   };
+}
+
+export interface UpdateSalaryPayload {
+  date?: string;
+  amount?: number;
+  description?: string;
+  payment_method?: "cash" | "bank";
+  status?: "draft" | "posted";
+}
+
+export async function updateEmployeeSalary(
+  employeeId: number,
+  entryId: number,
+  payload: UpdateSalaryPayload
+): Promise<EmployeeSalaryEntry> {
+  const body: Record<string, unknown> = {};
+  if (payload.date !== undefined) body.date = payload.date;
+  if (payload.amount !== undefined) body.amount = String(payload.amount);
+  if (payload.description !== undefined) body.description = payload.description?.trim() ?? "";
+  if (payload.payment_method !== undefined)
+    body.payment_method = PAYMENT_METHOD_TO_BACKEND[payload.payment_method];
+  if (payload.status !== undefined) body.status = payload.status === "posted" ? 1 : 0;
+  const { data } = await api.patch<ApiSalaryEntry>(
+    `/employees/${employeeId}/salaries/${entryId}/`,
+    body
+  );
+  return {
+    id: data.id,
+    date: data.date,
+    amount: parseFloat(data.amount) || 0,
+    description: data.description || "",
+    paymentMethod: (data.payment_method ?? 0) === 0 ? "cash" : "bank",
+    paymentMethodDisplay: data.payment_method_display,
+    status: (data.status ?? 0) === 1 ? "posted" : "draft",
+    statusDisplay: data.status_display,
+    createdAt: data.created_at,
+  };
+}
+
+export async function deleteEmployeeSalary(
+  employeeId: number,
+  entryId: number
+): Promise<void> {
+  await api.delete(`/employees/${employeeId}/salaries/${entryId}/`);
 }
 
 export async function fetchEmployeeSalaries(employeeId: number): Promise<EmployeeSalaryEntry[]> {
@@ -258,6 +323,10 @@ export async function fetchEmployeeSalaries(employeeId: number): Promise<Employe
     date: se.date,
     amount: parseFloat(se.amount) || 0,
     description: se.description || "",
+    paymentMethod: (se.payment_method ?? 0) === 0 ? "cash" : "bank",
+    paymentMethodDisplay: se.payment_method_display,
+    status: (se.status ?? 0) === 1 ? "posted" : "draft",
+    statusDisplay: se.status_display,
     createdAt: se.created_at,
   }));
 }
@@ -300,4 +369,69 @@ export async function fetchEmployeeTransactions(employeeId: number): Promise<Emp
     reference: t.reference || "",
     createdAt: t.created_at,
   }));
+}
+
+// --- Employee documents (list, upload, download, delete) ---
+
+export interface EmployeeDocument {
+  id: number;
+  name: string;
+  filename: string;
+  file_url: string | null;
+  size: number | null;
+  description: string;
+  created_at: string;
+}
+
+export async function fetchEmployeeDocuments(
+  employeeId: number
+): Promise<EmployeeDocument[]> {
+  const { data } = await api.get<EmployeeDocument[]>(
+    `/employees/${employeeId}/documents/`
+  );
+  return data ?? [];
+}
+
+export async function uploadEmployeeDocument(
+  employeeId: number,
+  file: File,
+  options?: { name?: string; description?: string }
+): Promise<EmployeeDocument> {
+  const form = new FormData();
+  form.append("file", file);
+  if (options?.name) form.append("name", options.name);
+  if (options?.description) form.append("description", options.description ?? "");
+  const { data } = await api.post<EmployeeDocument>(
+    `/employees/${employeeId}/documents/`,
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return data;
+}
+
+export async function deleteEmployeeDocument(
+  employeeId: number,
+  documentId: number
+): Promise<void> {
+  await api.delete(`/employees/${employeeId}/documents/${documentId}/`);
+}
+
+export async function downloadEmployeeDocument(
+  employeeId: number,
+  documentId: number,
+  filename: string
+): Promise<void> {
+  const { data } = await api.get<Blob>(
+    `/employees/${employeeId}/documents/${documentId}/download/`,
+    { responseType: "blob" }
+  );
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "document";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

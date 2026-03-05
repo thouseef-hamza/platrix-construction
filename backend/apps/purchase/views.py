@@ -9,6 +9,11 @@ from rest_framework.views import APIView
 from apps.accounts.models import AccountUser
 from apps.core.models import Document
 
+from .constants import (
+    PAYMENT_LEDGER_DRAFT,
+    PURCHASE_STATUS_DRAFT,
+    PURCHASE_STATUS_POSTED,
+)
 from .models import Purchase, PurchasePayment
 from .serializers import (
     PurchaseDetailSerializer,
@@ -101,7 +106,7 @@ class PurchaseListCreateAPIView(APIView):
 
 
 class PurchaseDetailAPIView(APIView):
-    """GET one, PATCH update (draft only). No delete."""
+    """GET one, PATCH update (draft only), DELETE (draft only, soft-delete)."""
 
     permission_classes = [IsAuthenticated]
 
@@ -125,6 +130,21 @@ class PurchaseDetailAPIView(APIView):
             raise PermissionDenied("You do not have access to this account.")
         serializer.save()
         return Response(PurchaseDetailSerializer(serializer.instance).data)
+
+    def delete(self, request, pk):
+        from rest_framework.exceptions import PermissionDenied
+
+        obj = self.get_object(pk)
+        if obj.account_id not in user_account_ids(request):
+            raise PermissionDenied("You do not have access to this account.")
+        if obj.status != PURCHASE_STATUS_DRAFT:
+            return Response(
+                {"detail": "Only draft purchases can be deleted."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        obj.is_deleted = True
+        obj.save(update_fields=["is_deleted", "updated_at"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class PurchasePaymentListCreateAPIView(APIView):
@@ -157,7 +177,14 @@ class PurchasePaymentListCreateAPIView(APIView):
         if purchase.account_id not in user_account_ids(request):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have access to this account.")
-        serializer = PurchasePaymentWriteSerializer(data=request.data)
+        if purchase.status != PURCHASE_STATUS_POSTED:
+            return Response(
+                {"detail": "Payment entries can only be created when the purchase is posted."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = PurchasePaymentWriteSerializer(
+            data=request.data, context={"purchase": purchase}
+        )
         serializer.is_valid(raise_exception=True)
         payment = serializer.save(purchase=purchase)
         _recompute_payment_status(purchase)
@@ -168,7 +195,7 @@ class PurchasePaymentListCreateAPIView(APIView):
 
 
 class PurchasePaymentDetailAPIView(APIView):
-    """PATCH a single payment (e.g. set status to posted). Requires x-account-id header."""
+    """PATCH a single payment (edit draft or set status to posted). DELETE draft only (soft-delete)."""
 
     permission_classes = [IsAuthenticated]
 
@@ -180,12 +207,29 @@ class PurchasePaymentDetailAPIView(APIView):
             )
         payment = get_payment_for_purchase(request, pk, payment_pk)
         serializer = PurchasePaymentWriteSerializer(
-            payment, data=request.data, partial=True
+            payment, data=request.data, partial=True, context={"purchase": payment.purchase}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         _recompute_payment_status(payment.purchase)
         return Response(PurchasePaymentReadSerializer(payment).data)
+
+    def delete(self, request, pk, payment_pk):
+        if _current_account_id(request) is None:
+            return Response(
+                {"detail": "x-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        payment = get_payment_for_purchase(request, pk, payment_pk)
+        if payment.status != PAYMENT_LEDGER_DRAFT:
+            return Response(
+                {"detail": "Only draft payments can be deleted."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        payment.is_deleted = True
+        payment.save(update_fields=["is_deleted", "updated_at"])
+        _recompute_payment_status(payment.purchase)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class PurchaseDocumentListCreateAPIView(APIView):

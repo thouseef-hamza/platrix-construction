@@ -146,7 +146,7 @@ export default function ProjectCreateModal({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[95vw] w-full mx-4">
-      <form onSubmit={handleSubmit} className="p-6 sm:p-8">
+      <form onSubmit={handleSubmit} noValidate className="p-6 sm:p-8">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
           {isEditMode ? "Edit Project" : "Create Project"}
         </h2>
@@ -234,8 +234,7 @@ export default function ProjectCreateModal({
               <Label>Contract Value (QAR)</Label>
               <input
                 type="number"
-                min={0}
-                step={1000}
+                inputMode="decimal"
                 className={inputClass}
                 value={contractValue}
                 onChange={(e) => setContractValue(e.target.value)}
@@ -246,8 +245,7 @@ export default function ProjectCreateModal({
               <Label>Budget (QAR)</Label>
               <input
                 type="number"
-                min={0}
-                step={1000}
+                inputMode="decimal"
                 className={inputClass}
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}

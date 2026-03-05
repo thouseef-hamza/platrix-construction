@@ -36,7 +36,6 @@ export default function AccountCreateModal({
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("asset");
   const [parentId, setParentId] = useState("");
-  const [openingBalance, setOpeningBalance] = useState("");
   const [isActive, setIsActive] = useState(true);
 
   const resetForm = () => {
@@ -44,7 +43,6 @@ export default function AccountCreateModal({
     setName("");
     setType("asset");
     setParentId("");
-    setOpeningBalance("");
     setIsActive(true);
   };
 
@@ -55,8 +53,8 @@ export default function AccountCreateModal({
       name: name.trim(),
       type,
       parentId: parentId ? Number(parentId) : null,
-      balance: parseFloat(openingBalance) || 0,
       isActive,
+      balance: 0,
     });
     resetForm();
     onClose();
@@ -131,17 +129,6 @@ export default function AccountCreateModal({
                   </option>
                 ))}
             </select>
-          </div>
-          <div>
-            <Label>Opening balance (QAR)</Label>
-            <input
-              type="number"
-              step="0.01"
-              className={inputClass}
-              value={openingBalance}
-              onChange={(e) => setOpeningBalance(e.target.value)}
-              placeholder="0"
-            />
           </div>
           <div className="flex items-center gap-2">
             <input

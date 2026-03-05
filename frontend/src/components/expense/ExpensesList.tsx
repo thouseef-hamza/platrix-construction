@@ -23,6 +23,7 @@ import {
   updateExpense,
   addExpensePayment,
   patchExpensePayment,
+  deleteExpensePayment,
   type CreateExpensePayload,
 } from "@/lib/expensesApi";
 import { fetchEmployees } from "@/lib/employeesApi";
@@ -68,6 +69,7 @@ function buildCreatePayload(data: Omit<Expense, "id">): CreateExpensePayload {
     payment_method: PAYMENT_METHOD_TO_BACKEND[data.paymentMethod ?? "cash"],
     paid_amount: data.paidAmount ?? 0,
     status: STATUS_TO_BACKEND[data.status ?? "posted"],
+    expense_account: data.category === "general" ? (data.expenseAccountId ?? null) : undefined,
   };
 }
 
@@ -99,6 +101,7 @@ export default function ExpensesList() {
   const [selected, setSelected] = useState<Expense | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
 
   const { data: selectedDetail } = useQuery({
     queryKey: ["expense", selected?.id],
@@ -111,6 +114,7 @@ export default function ExpensesList() {
     mutationFn: createExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const updateMutation = useMutation({
@@ -124,6 +128,7 @@ export default function ExpensesList() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(id)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const addPaymentMutation = useMutation({
@@ -137,6 +142,7 @@ export default function ExpensesList() {
     onSuccess: (_, { expenseId }) => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
   const patchPaymentMutation = useMutation({
@@ -147,11 +153,21 @@ export default function ExpensesList() {
     }: {
       expenseId: number;
       paymentId: number;
-      payload: { status: "draft" | "posted" };
+      payload: Parameters<typeof patchExpensePayment>[2];
     }) => patchExpensePayment(expenseId, paymentId, payload),
     onSuccess: (_, { expenseId }) => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+    },
+  });
+  const deletePaymentMutation = useMutation({
+    mutationFn: ({ expenseId, paymentId }: { expenseId: number; paymentId: number }) =>
+      deleteExpensePayment(expenseId, paymentId),
+    onSuccess: (_, { expenseId }) => {
+      queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
     },
   });
 
@@ -437,13 +453,47 @@ export default function ExpensesList() {
             payload: { status: "posted" },
           })
         }
+        onEditPayment={(expenseId, paymentId, payload) =>
+          patchPaymentMutation.mutate({
+            expenseId: Number(expenseId),
+            paymentId: Number(paymentId),
+            payload: { date: payload.date, amount: payload.amount, reference: payload.reference ?? "" },
+          })
+        }
+        onDeletePayment={(expenseId, paymentId) =>
+          deletePaymentMutation.mutate({ expenseId: Number(expenseId), paymentId: Number(paymentId) })
+        }
+        onEdit={(exp) => {
+          setExpenseToEdit(exp);
+          setViewOpen(false);
+          setSelected(null);
+          setCreateOpen(true);
+        }}
       />
       <ExpenseCreateModal
         isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setExpenseToEdit(null);
+        }}
         projects={projectRefs}
         employees={employeeRefs}
-        isSubmitting={createMutation.isPending}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
+        expenseToEdit={expenseToEdit}
+        onUpdate={
+          expenseToEdit
+            ? (id, payload) =>
+                updateMutation.mutate(
+                  { id: Number(id), payload },
+                  {
+                    onSuccess: () => {
+                      setCreateOpen(false);
+                      setExpenseToEdit(null);
+                    },
+                  }
+                )
+            : undefined
+        }
         onCreate={(data) => {
           createMutation.mutate(buildCreatePayload(data), {
             onSuccess: () => setCreateOpen(false),

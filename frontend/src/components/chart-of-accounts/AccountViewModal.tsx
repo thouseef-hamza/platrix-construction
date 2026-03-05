@@ -19,6 +19,7 @@ interface AccountViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate?: (id: number, updates: Partial<Account>) => void;
+  onEdit?: (account: Account) => void;
 }
 
 export default function AccountViewModal({
@@ -26,6 +27,7 @@ export default function AccountViewModal({
   accounts,
   isOpen,
   onClose,
+  onEdit,
 }: AccountViewModalProps) {
   if (!account) return null;
 
@@ -105,7 +107,30 @@ export default function AccountViewModal({
               </span>
             </dd>
           </div>
+          {account.isSystem && (
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              System-generated accounts cannot be edited or deleted.
+            </p>
+          )}
         </dl>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          {onEdit && !account.isSystem && (
+            <button
+              type="button"
+              onClick={() => onEdit(account)}
+              className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+            >
+              Edit
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </Modal>
   );

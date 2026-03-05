@@ -2,10 +2,24 @@
 
 import { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
+import type { DashboardCashFlow } from "@/lib/dashboardApi";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-export default function CashFlowChart() {
+const DEFAULT_MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+export default function CashFlowChart({
+  cashFlow,
+}: {
+  cashFlow?: DashboardCashFlow | null;
+}) {
+  const months = cashFlow?.months ?? DEFAULT_MONTHS;
+  const invoicesData = cashFlow?.invoices ?? [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const expensesData = cashFlow?.expenses ?? [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
   const options: ApexOptions = {
     colors: ["#10b981", "#f59e0b"],
     chart: {
@@ -26,10 +40,7 @@ export default function CashFlowChart() {
     dataLabels: { enabled: false },
     stroke: { show: true, width: 2, colors: ["transparent"] },
     xaxis: {
-      categories: [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-      ],
+      categories: months,
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
@@ -45,14 +56,14 @@ export default function CashFlowChart() {
     fill: { opacity: 1 },
     tooltip: {
       y: {
-        formatter: (val: number) => `₹ ${(val / 1000).toFixed(0)}K`,
+        formatter: (val: number) => `QAR ${(val / 1000).toFixed(0)}K`,
       },
     },
   };
 
   const series = [
-    { name: "Invoices", data: [420, 380, 510, 480, 600, 550, 620, 580, 640, 720, 680, 750] },
-    { name: "Expenses", data: [280, 320, 290, 310, 350, 380, 400, 420, 390, 450, 430, 480] },
+    { name: "Invoices", data: invoicesData },
+    { name: "Expenses", data: expensesData },
   ];
 
   return (

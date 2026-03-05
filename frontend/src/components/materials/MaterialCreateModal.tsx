@@ -43,10 +43,12 @@ export default function MaterialCreateModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const rateNum = parseFloat(rate) || 0;
+    const unitLabel = UNIT_OPTIONS.find((o) => o.value === unit)?.label ?? "—";
     onCreate({
       name: name.trim() || "Unnamed Material",
       code: code.trim() || "—",
       unit,
+      unitDisplay: unitLabel,
       rate: rateNum,
     });
     setName("");

@@ -54,4 +54,8 @@ export interface Expense {
     reference?: string;
     status?: PaymentLedgerStatus;
   }[];
+  /** For general expense: selected expense COA (default 5000). */
+  expenseAccountId?: number | null;
+  expenseAccountCode?: string | null;
+  expenseAccountName?: string | null;
 }

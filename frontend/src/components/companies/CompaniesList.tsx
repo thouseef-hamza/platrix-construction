@@ -19,6 +19,7 @@ import {
   fetchCompanies,
   createCompany,
   companyTypeToBackend,
+  invalidateCompanyQueries,
 } from "@/lib/companiesApi";
 import CompanyViewModal from "./CompanyViewModal";
 import CompanyCreateModal from "./CompanyCreateModal";
@@ -47,9 +48,7 @@ export default function CompaniesList({ title, type }: CompaniesListProps) {
         company_type: companyTypeInt,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [COMPANIES_QUERY_KEY, companyId, companyTypeInt],
-      });
+      invalidateCompanyQueries(queryClient);
     },
   });
 

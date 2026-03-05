@@ -4,6 +4,7 @@ from .views import (
     ProjectDocumentDestroyAPIView,
     ProjectDocumentDownloadAPIView,
     ProjectDocumentListCreateAPIView,
+    ProjectFinancialAPIView,
     ProjectListCreateAPIView,
     ProjectUpdateAPIView,
 )
@@ -11,6 +12,7 @@ from .views import (
 urlpatterns = [
     path("", ProjectListCreateAPIView.as_view()),
     path("<int:pk>/", ProjectUpdateAPIView.as_view()),
+    path("<int:pk>/financial/", ProjectFinancialAPIView.as_view()),
     path("<int:pk>/documents/", ProjectDocumentListCreateAPIView.as_view()),
     path("<int:pk>/documents/<int:doc_pk>/download/", ProjectDocumentDownloadAPIView.as_view()),
     path("<int:pk>/documents/<int:doc_pk>/", ProjectDocumentDestroyAPIView.as_view()),

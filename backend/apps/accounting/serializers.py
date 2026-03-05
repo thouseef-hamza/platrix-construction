@@ -6,7 +6,7 @@ from .models import ChartOfAccount, LedgerEntry, LedgerLine
 
 
 class ChartOfAccountListSerializer(serializers.ModelSerializer):
-    """List/read chart of account. balance = sum(debit - credit) from posted ledger lines."""
+    """List/read chart of account. balance = debit-credit for asset/expense, credit-debit for liability/equity/revenue."""
 
     account_type_display = serializers.CharField(
         source="get_account_type_display", read_only=True

@@ -1,6 +1,13 @@
+import type { QueryClient } from "@tanstack/react-query";
 import type { Company } from "@/types/company";
 import type { CompanyType } from "@/types/company";
 import { api } from "./api";
+
+/** Invalidate all company-related TanStack queries so lists/dropdowns refresh everywhere. */
+export function invalidateCompanyQueries(queryClient: QueryClient): void {
+  queryClient.invalidateQueries({ queryKey: ["companies"] });
+  queryClient.invalidateQueries({ queryKey: ["companies-clients"] });
+}
 
 // Backend: 0=Client, 1=Supplier, 2=Subcontractor
 const COMPANY_TYPE_CLIENT = 0;

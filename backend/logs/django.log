@@ -3665,3 +3665,728 @@ Unauthorized: /api/inventory/materials/
 Unauthorized: /api/companies/
 Unauthorized: /api/purchases/
 Unauthorized: /api/projects/
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/signals.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/signals.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/signals.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/purchases/14/
+Bad Request: /api/purchases/15/
+Bad Request: /api/purchases/15/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+Unauthorized: /api/purchases/14/documents/
+Unauthorized: /api/purchases/14/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/purchases/17/
+Not Found: /favicon.ico
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/views.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /favicon.ico
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/views.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/purchases/24/
+Bad Request: /api/purchases/24/
+Bad Request: /api/purchases/24/
+Bad Request: /api/purchases/24/
+Bad Request: /api/purchases/25/
+Unauthorized: /api/projects/1/documents/
+Bad Request: /api/purchases/25/
+Unauthorized: /api/purchases/25/
+Unauthorized: /api/purchases/25/documents/
+Bad Request: /api/purchases/25/
+Bad Request: /api/purchases/26/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Bad Request: /api/purchases/26/
+Bad Request: /api/purchases/26/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/admin.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/admin.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/config/middleware.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/purchase/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /favicon.ico
+Unauthorized: /api/expenses/expense-accounts/
+Bad Request: /api/expenses/4/
+Bad Request: /api/expenses/3/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/admin.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/core/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/models.py changed, reloading.
+Watching for file changes with StatReloader
+Unauthorized: /api/projects/
+Unauthorized: /api/expenses/
+Unauthorized: /api/employees/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/expenses/migrations/__init__.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/admin.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/admin.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/views.py changed, reloading.
+Watching for file changes with StatReloader
+Unauthorized: /api/invoices/
+Internal Server Error: /api/invoices/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/views.py", line 101, in post
+    serializer.save(account=account)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/serializers.py", line 290, in create
+    invoice = Invoice.objects.create(
+              ^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: django.db.models.query.QuerySet.create() got multiple values for keyword argument 'amount'
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/apps.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/invoices/constants.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Unauthorized: /api/invoices/
+Not Found: /favicon.ico
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+Unauthorized: /api/accounting/chart-of-accounts/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/core/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/models.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Internal Server Error: /api/employees/1/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column employees_employeesalaryentry.payment_method does not exist
+LINE 1: ...", "employees_employeesalaryentry"."description", "employees...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py", line 91, in get
+    obj = self.get_object(pk)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py", line 88, in get_object
+    return get_object_or_404(qs, pk=pk)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/shortcuts.py", line 90, in get_object_or_404
+    return queryset.get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 635, in get
+    num = len(clone)
+          ^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2002, in _fetch_all
+    self._prefetch_related_objects()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 1369, in _prefetch_related_objects
+    prefetch_related_objects(self._result_cache, *self._prefetch_related_lookups)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2451, in prefetch_related_objects
+    obj_list, additional_lookups = prefetch_one_level(
+                                   ^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2607, in prefetch_one_level
+    ) = prefetcher.get_prefetch_querysets(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/fields/related_descriptors.py", line 777, in get_prefetch_querysets
+    for rel_obj in queryset:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: column employees_employeesalaryentry.payment_method does not exist
+LINE 1: ...", "employees_employeesalaryentry"."description", "employees...
+                                                             ^
+Internal Server Error: /api/employees/1/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column employees_employeesalaryentry.payment_method does not exist
+LINE 1: ...", "employees_employeesalaryentry"."description", "employees...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py", line 91, in get
+    obj = self.get_object(pk)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py", line 88, in get_object
+    return get_object_or_404(qs, pk=pk)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/shortcuts.py", line 90, in get_object_or_404
+    return queryset.get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 635, in get
+    num = len(clone)
+          ^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2002, in _fetch_all
+    self._prefetch_related_objects()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 1369, in _prefetch_related_objects
+    prefetch_related_objects(self._result_cache, *self._prefetch_related_lookups)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2451, in prefetch_related_objects
+    obj_list, additional_lookups = prefetch_one_level(
+                                   ^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2607, in prefetch_one_level
+    ) = prefetcher.get_prefetch_querysets(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/fields/related_descriptors.py", line 777, in get_prefetch_querysets
+    for rel_obj in queryset:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: column employees_employeesalaryentry.payment_method does not exist
+LINE 1: ...", "employees_employeesalaryentry"."description", "employees...
+                                                             ^
+Internal Server Error: /api/employees/1/salaries/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column "payment_method" of relation "employees_employeesalaryentry" does not exist
+LINE 1: ..., "employee_id", "date", "amount", "description", "payment_m...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py", line 128, in post
+    serializer.save(employee=employee)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 991, in create
+    instance = ModelClass._default_manager.create(**validated_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 669, in create
+    obj.save(force_insert=True, using=self.db)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 874, in save
+    self.save_base(
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 1918, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1925, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: column "payment_method" of relation "employees_employeesalaryentry" does not exist
+LINE 1: ..., "employee_id", "date", "amount", "description", "payment_m...
+                                                             ^
+Internal Server Error: /api/employees/1/salaries/
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedColumn: column "payment_method" of relation "employees_employeesalaryentry" does not exist
+LINE 1: ..., "employee_id", "date", "amount", "description", "payment_m...
+                                                             ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py", line 128, in post
+    serializer.save(employee=employee)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/rest_framework/serializers.py", line 991, in create
+    instance = ModelClass._default_manager.create(**validated_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 669, in create
+    obj.save(force_insert=True, using=self.db)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 874, in save
+    self.save_base(
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/query.py", line 1918, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1925, in execute_sql
+    cursor.execute(sql, params)
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/.venv/lib/python3.12/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+django.db.utils.ProgrammingError: column "payment_method" of relation "employees_employeesalaryentry" does not exist
+LINE 1: ..., "employee_id", "date", "amount", "description", "payment_m...
+                                                             ^
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/core/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/companies/migrations/0001_initial.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Unauthorized: /api/companies/
+Unauthorized: /api/projects/
+Bad Request: /api/projects/
+Bad Request: /api/companies/
+Bad Request: /api/companies/
+Bad Request: /api/projects/
+Bad Request: /api/companies/
+Bad Request: /api/projects/
+Bad Request: /api/companies/
+Bad Request: /api/projects/
+Bad Request: /api/companies/
+Bad Request: /api/projects/
+Bad Request: /api/projects/
+Bad Request: /api/companies/
+Bad Request: /api/companies/
+Bad Request: /api/projects/
+Bad Request: /api/companies/
+Bad Request: /api/projects/
+Bad Request: /api/companies/
+Bad Request: /api/projects/
+Bad Request: /api/companies/
+Bad Request: /api/projects/
+Not Found: /signin
+Not Found: /favicon.ico
+Watching for file changes with StatReloader
+Not Found: /favicon.ico
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/accounting/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /favicon.ico
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
+Watching for file changes with StatReloader

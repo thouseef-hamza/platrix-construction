@@ -22,9 +22,13 @@ import {
   createEmployee,
   updateEmployee,
   addEmployeeSalary,
-  addEmployeeTransaction,
+  updateEmployeeSalary,
+  deleteEmployeeSalary,
 } from "@/lib/employeesApi";
-import type { AddSalaryPayload, AddTransactionPayload } from "@/lib/employeesApi";
+import type {
+  AddSalaryPayload,
+  UpdateSalaryPayload,
+} from "@/lib/employeesApi";
 import EmployeeViewModal from "./EmployeeViewModal";
 import EmployeeCreateModal from "./EmployeeCreateModal";
 
@@ -95,14 +99,29 @@ export default function EmployeesList() {
       queryClient.invalidateQueries({ queryKey: ["employee", String(employeeId)] });
     },
   });
-  const addTransactionMutation = useMutation({
+  const updateSalaryMutation = useMutation({
     mutationFn: ({
       employeeId,
+      entryId,
       payload,
     }: {
       employeeId: number;
-      payload: AddTransactionPayload;
-    }) => addEmployeeTransaction(employeeId, payload),
+      entryId: number;
+      payload: UpdateSalaryPayload;
+    }) => updateEmployeeSalary(employeeId, entryId, payload),
+    onSuccess: (_, { employeeId }) => {
+      queryClient.invalidateQueries({ queryKey: [EMPLOYEES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["employee", String(employeeId)] });
+    },
+  });
+  const deleteSalaryMutation = useMutation({
+    mutationFn: ({
+      employeeId,
+      entryId,
+    }: {
+      employeeId: number;
+      entryId: number;
+    }) => deleteEmployeeSalary(employeeId, entryId),
     onSuccess: (_, { employeeId }) => {
       queryClient.invalidateQueries({ queryKey: [EMPLOYEES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["employee", String(employeeId)] });
@@ -383,22 +402,40 @@ export default function EmployeesList() {
           setSelected(null);
         }}
         onUpdate={handleUpdate}
-        onAddSalary={(payload) => {
+        onAddSalary={(payload, onSuccess) => {
           if (employeeForModal?.id)
-            addSalaryMutation.mutate({
-              employeeId: Number(employeeForModal.id),
-              payload,
-            });
+            addSalaryMutation.mutate(
+              {
+                employeeId: Number(employeeForModal.id),
+                payload,
+              },
+              { onSuccess: () => onSuccess?.() }
+            );
         }}
-        onAddTransaction={(payload) => {
+        onEditSalary={(entryId, payload, onSuccess) => {
           if (employeeForModal?.id)
-            addTransactionMutation.mutate({
-              employeeId: Number(employeeForModal.id),
-              payload,
-            });
+            updateSalaryMutation.mutate(
+              {
+                employeeId: Number(employeeForModal.id),
+                entryId,
+                payload,
+              },
+              { onSuccess: () => onSuccess?.() }
+            );
+        }}
+        onDeleteSalary={(entryId, onSuccess) => {
+          if (employeeForModal?.id)
+            deleteSalaryMutation.mutate(
+              {
+                employeeId: Number(employeeForModal.id),
+                entryId,
+              },
+              { onSuccess: () => onSuccess?.() }
+            );
         }}
         isAddingSalary={addSalaryMutation.isPending}
-        isAddingTransaction={addTransactionMutation.isPending}
+        isEditingSalary={updateSalaryMutation.isPending}
+        isDeletingSalary={deleteSalaryMutation.isPending}
       />
       <EmployeeCreateModal
         isOpen={createOpen}
