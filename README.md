@@ -196,6 +196,10 @@ The backend can be run in production using Docker Compose: **PostgreSQL**, **Dja
 7. **SSL / HTTPS**
    - The Compose setup exposes port 80 only. For HTTPS, use a reverse proxy in front of Nginx (e.g. Traefik, Caddy) or configure Nginx with SSL certificates (e.g. Let’s Encrypt) and expose 443.
 
+## Deployment (DigitalOcean / VM)
+
+For full step-by-step deployment on a DigitalOcean droplet, see **[backend/DEPLOYMENT.md](backend/DEPLOYMENT.md)**.
+
 ## License
 
 Proprietary – see your organization’s terms.
