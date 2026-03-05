@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -13,41 +14,72 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/utils/format";
-import type { Bill } from "@/types/bill";
-import type { ProjectRef } from "@/types/bill";
-import { MOCK_BILLS } from "@/data/mockBills";
-import { MOCK_SUBCONTRACTS } from "@/data/mockCompanies";
-import { MOCK_PROJECTS } from "@/data/mockProjects";
-import BillViewModal from "./BillViewModal";
-import BillCreateModal from "./BillCreateModal";
+import type { Invoice } from "@/types/invoice";
+import { useCompany } from "@/context/CompanyContext";
+import { fetchCompanies } from "@/lib/companiesApi";
+import { fetchProjects } from "@/lib/projectsApi";
+import {
+  fetchInvoices,
+  createInvoice,
+  updateInvoice,
+  INVOICES_QUERY_KEY,
+} from "@/lib/invoicesApi";
+import InvoiceViewModal from "@/components/invoice/InvoiceViewModal";
+import InvoiceCreateModal from "@/components/invoice/InvoiceCreateModal";
+import type { ProjectOption } from "@/components/invoice/InvoiceCreateModal";
 
 const PAGE_SIZE = 5;
-
-const PROJECT_OPTIONS: ProjectRef[] = MOCK_PROJECTS.map((p) => ({ id: p.id, name: p.projectName }));
+const INVOICE_TYPE_SUBCONTRACTOR = 1;
 
 export default function BillsList() {
-  const [items, setItems] = useState<Bill[]>(() => [...MOCK_BILLS]);
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [projectFilter, setProjectFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selected, setSelected] = useState<Bill | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [billToEdit, setBillToEdit] = useState<Bill | null>(null);
+  const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | null>(null);
+
+  const { data: invoices = [], isLoading } = useQuery({
+    queryKey: [INVOICES_QUERY_KEY, companyId, INVOICE_TYPE_SUBCONTRACTOR],
+    queryFn: () => fetchInvoices(INVOICE_TYPE_SUBCONTRACTOR),
+    enabled: !!companyId,
+  });
+
+  const { data: subcontractors = [] } = useQuery({
+    queryKey: ["companies", companyId, 2],
+    queryFn: () => fetchCompanies(2),
+    enabled: !!companyId && createOpen,
+  });
+
+  const { data: projectsRaw = [] } = useQuery({
+    queryKey: ["projects", companyId],
+    queryFn: () => fetchProjects(),
+    enabled: !!companyId,
+  });
+
+  const projectOptions: ProjectOption[] = useMemo(
+    () => projectsRaw.map((p) => ({ id: String(p.id), name: p.name })),
+    [projectsRaw]
+  );
 
   const { pageItems, total, totalPages } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let list = items;
+    let list = invoices;
     if (q) {
       list = list.filter(
-        (b) =>
-          b.subcontractor.name.toLowerCase().includes(q) ||
-          b.reference.toLowerCase().includes(q) ||
-          b.project.name.toLowerCase().includes(q)
+        (inv) =>
+          inv.partyName.toLowerCase().includes(q) ||
+          (inv.reference ?? "").toLowerCase().includes(q) ||
+          (inv.projectName ?? "").toLowerCase().includes(q)
       );
     }
     if (projectFilter) {
-      list = list.filter((b) => b.project.id === projectFilter);
+      list = list.filter(
+        (inv) => inv.projectId != null && String(inv.projectId) === projectFilter
+      );
     }
     const total = list.length;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -57,22 +89,49 @@ export default function BillsList() {
       total,
       totalPages,
     };
-  }, [items, searchQuery, projectFilter, currentPage]);
+  }, [invoices, searchQuery, projectFilter, currentPage]);
 
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
-  const handleUpdate = (id: string, updates: Partial<Bill>) => {
-    setItems((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
-    );
-    if (selected?.id === id) setSelected((s) => (s ? { ...s, ...updates } : null));
-    if (billToEdit?.id === id) setBillToEdit((b) => (b ? { ...b, ...updates } : null));
+  const createMutation = useMutation({
+    mutationFn: createInvoice,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updateInvoice>[1] }) =>
+      updateInvoice(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["invoice", invoiceToEdit?.id] });
+      setInvoiceToEdit(null);
+      setCreateOpen(false);
+    },
+  });
+
+  const handleCreate = (payload: Parameters<typeof createInvoice>[0]) => {
+    createMutation.mutate(payload, {
+      onSuccess: () => setCreateOpen(false),
+    });
   };
 
-  const handlePost = (id: string) => {
-    handleUpdate(id, { status: "posted" });
+  const handleUpdate = (
+    id: number,
+    payload: Parameters<typeof updateInvoice>[1]
+  ) => {
+    updateMutation.mutate({ id, payload });
+  };
+
+  const handleEditFromView = (invoice: Invoice) => {
+    if (invoice.status !== "draft") return;
+    setSelectedId(null);
+    setViewOpen(false);
+    setInvoiceToEdit(invoice);
+    setCreateOpen(true);
   };
 
   return (
@@ -82,7 +141,7 @@ export default function BillsList() {
         <button
           type="button"
           onClick={() => {
-            setBillToEdit(null);
+            setInvoiceToEdit(null);
             setCreateOpen(true);
           }}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
@@ -125,7 +184,7 @@ export default function BillsList() {
                   className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-10 text-sm shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
                 >
                   <option value="">All projects</option>
-                  {PROJECT_OPTIONS.map((p) => (
+                  {projectOptions.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -134,7 +193,7 @@ export default function BillsList() {
               </div>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Showing {pageItems.length} of {total} subcontractor invoices
+              {isLoading ? "Loading…" : `Showing ${pageItems.length} of ${total} subcontractor invoices`}
             </p>
           </div>
           <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-white/[0.05]">
@@ -154,47 +213,47 @@ export default function BillsList() {
                   {pageItems.length === 0 ? (
                     <TableRow>
                       <td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No subcontractor invoices match your search.
+                        {isLoading ? "Loading…" : "No subcontractor invoices match your search."}
                       </td>
                     </TableRow>
                   ) : (
-                    pageItems.map((bill) => (
+                    pageItems.map((inv) => (
                       <tr
-                        key={bill.id}
+                        key={inv.id}
                         role="button"
                         tabIndex={0}
                         onClick={() => {
-                          setSelected(bill);
+                          setSelectedId(Number(inv.id));
                           setViewOpen(true);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            setSelected(bill);
+                            setSelectedId(Number(inv.id));
                             setViewOpen(true);
                           }
                         }}
                         className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.03]"
                       >
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
-                          {bill.project.name}
+                          {inv.projectName ?? "—"}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                          {bill.subcontractor.name}
+                          {inv.partyName}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {bill.reference}
+                          {inv.reference ?? "—"}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start">
-                          <Badge size="sm" color={bill.status === "draft" ? "warning" : "success"}>
-                            {bill.status === "draft" ? "Draft" : "Posted"}
+                          <Badge size="sm" color={inv.status === "draft" ? "warning" : "success"}>
+                            {inv.status === "draft" ? "Draft" : "Posted"}
                           </Badge>
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {formatDate(bill.date)}
+                          {formatDate(inv.date)}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-400 tabular-nums">
-                          {formatCurrency(bill.amount)}
+                          {formatCurrency(inv.amount)}
                         </TableCell>
                       </tr>
                     ))
@@ -217,35 +276,30 @@ export default function BillsList() {
           )}
         </ComponentCard>
       </div>
-      <BillViewModal
-        bill={selected}
+
+      <InvoiceViewModal
+        invoiceId={selectedId}
         isOpen={viewOpen}
         onClose={() => {
           setViewOpen(false);
-          setSelected(null);
+          setSelectedId(null);
         }}
-        onUpdate={handleUpdate}
-        onEdit={(bill) => {
-          if (bill.status !== "draft") return;
-          setSelected(null);
-          setViewOpen(false);
-          setBillToEdit(bill);
-          setCreateOpen(true);
-        }}
-        onPost={handlePost}
+        title="Subcontractor Invoice"
+        onEdit={handleEditFromView}
       />
-      <BillCreateModal
+
+      <InvoiceCreateModal
         isOpen={createOpen}
         onClose={() => {
           setCreateOpen(false);
-          setBillToEdit(null);
+          setInvoiceToEdit(null);
         }}
-        projects={PROJECT_OPTIONS}
-        subcontractors={MOCK_SUBCONTRACTS}
-        onCreate={(data) => {
-          setItems((prev) => [{ ...data, id: `b-${Date.now()}` }, ...prev]);
-        }}
-        bill={billToEdit}
+        title="Subcontractor Invoice"
+        invoiceType={INVOICE_TYPE_SUBCONTRACTOR}
+        parties={subcontractors}
+        projects={projectOptions}
+        onCreate={handleCreate}
+        invoiceToEdit={invoiceToEdit}
         onUpdate={handleUpdate}
       />
     </div>

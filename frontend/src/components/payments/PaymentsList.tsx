@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import Pagination from "@/components/tables/Pagination";
@@ -13,71 +14,61 @@ import {
 } from "@/components/ui/table";
 import Badge from "@/components/ui/badge/Badge";
 import { formatCurrency, formatDate } from "@/utils/format";
-import type { Payment, PaymentStatus } from "@/types/payment";
-import { MOCK_PAYMENTS } from "@/data/mockPayments";
-import { MOCK_CLIENTS } from "@/data/mockCompanies";
-import PaymentViewModal from "./PaymentViewModal";
-import PaymentCreateModal from "./PaymentCreateModal";
+import type { Invoice } from "@/types/invoice";
+import { useCompany } from "@/context/CompanyContext";
+import { fetchCompanies } from "@/lib/companiesApi";
+import {
+  fetchInvoices,
+  createInvoice,
+  updateInvoice,
+  INVOICES_QUERY_KEY,
+} from "@/lib/invoicesApi";
+import InvoiceViewModal from "@/components/invoice/InvoiceViewModal";
+import InvoiceCreateModal from "@/components/invoice/InvoiceCreateModal";
 
 const PAGE_SIZE = 5;
+const INVOICE_TYPE_CLIENT = 0;
 
-function getTotalPaidForInvoice(items: Payment[], invoiceId: string): number {
-  return items
-    .filter((p) => p.invoiceId === invoiceId)
-    .reduce((sum, p) => sum + p.amount, 0);
-}
-
-function getTotalReceivedForInvoice(items: Payment[], invoice: Payment): number {
-  return (invoice.receivedAmount ?? 0) + getTotalPaidForInvoice(items, invoice.id);
-}
-
-function getPaymentsForInvoice(items: Payment[], invoiceId: string): Payment[] {
-  return items.filter((p) => p.invoiceId === invoiceId);
-}
-
-function getPaymentStatus(items: Payment[], invoice: Payment): PaymentStatus {
-  const totalReceived = getTotalReceivedForInvoice(items, invoice);
-  if (totalReceived === 0) return "credit";
-  if (totalReceived >= invoice.amount) return "completed";
-  return "partial";
-}
-
-const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
-  credit: "Not completed",
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  not_completed: "Not completed",
   partial: "Partial",
   completed: "Completed",
 };
-
-const PAYMENT_STATUS_COLOR: Record<PaymentStatus, "warning" | "info" | "success"> = {
-  credit: "warning",
+const PAYMENT_STATUS_COLOR: Record<string, "warning" | "info" | "success"> = {
+  not_completed: "warning",
   partial: "info",
   completed: "success",
 };
 
 export default function PaymentsList() {
-  const [items, setItems] = useState<Payment[]>(() => [...MOCK_PAYMENTS]);
+  const { companyId } = useCompany();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selected, setSelected] = useState<Payment | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [addPaymentOpen, setAddPaymentOpen] = useState(false);
-  const [invoiceForPayment, setInvoiceForPayment] = useState<Payment | null>(null);
-  const [editInvoiceOpen, setEditInvoiceOpen] = useState(false);
-  const [invoiceToEdit, setInvoiceToEdit] = useState<Payment | null>(null);
+  const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | null>(null);
 
-  const invoices = useMemo(
-    () => items.filter((p) => !p.invoiceId),
-    [items]
-  );
+  const { data: invoices = [], isLoading } = useQuery({
+    queryKey: [INVOICES_QUERY_KEY, companyId, INVOICE_TYPE_CLIENT],
+    queryFn: () => fetchInvoices(INVOICE_TYPE_CLIENT),
+    enabled: !!companyId,
+  });
+
+  const { data: clients = [] } = useQuery({
+    queryKey: ["companies", companyId, 0],
+    queryFn: () => fetchCompanies(0),
+    enabled: !!companyId && createOpen,
+  });
 
   const { pageItems, total, totalPages } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const list = q
       ? invoices.filter(
-          (p) =>
-            p.client.name.toLowerCase().includes(q) ||
-            p.reference.toLowerCase().includes(q)
+          (inv) =>
+            inv.partyName.toLowerCase().includes(q) ||
+            (inv.reference ?? "").toLowerCase().includes(q)
         )
       : invoices;
     const total = list.length;
@@ -94,11 +85,42 @@ export default function PaymentsList() {
     if (totalPages > 0 && currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
-  const handleUpdate = (id: string, updates: Partial<Payment>) => {
-    setItems((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-    );
-    if (selected?.id === id) setSelected((s) => (s ? { ...s, ...updates } : null));
+  const createMutation = useMutation({
+    mutationFn: createInvoice,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updateInvoice>[1] }) =>
+      updateInvoice(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [INVOICES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ["invoice", invoiceToEdit?.id] });
+      setInvoiceToEdit(null);
+      setCreateOpen(false);
+    },
+  });
+
+  const handleCreate = (payload: Parameters<typeof createInvoice>[0]) => {
+    createMutation.mutate(payload, {
+      onSuccess: () => setCreateOpen(false),
+    });
+  };
+
+  const handleUpdate = (
+    id: number,
+    payload: Parameters<typeof updateInvoice>[1]
+  ) => {
+    updateMutation.mutate({ id, payload });
+  };
+
+  const handleEditFromView = (invoice: Invoice) => {
+    setSelectedId(null);
+    setViewOpen(false);
+    setInvoiceToEdit(invoice);
+    setCreateOpen(true);
   };
 
   return (
@@ -107,7 +129,10 @@ export default function PaymentsList() {
         <PageBreadcrumb pageTitle="Client Invoice" />
         <button
           type="button"
-          onClick={() => setCreateOpen(true)}
+          onClick={() => {
+            setInvoiceToEdit(null);
+            setCreateOpen(true);
+          }}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -135,7 +160,7 @@ export default function PaymentsList() {
               />
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Showing {pageItems.length} of {total} client invoices
+              {isLoading ? "Loading…" : `Showing ${pageItems.length} of ${total} client invoices`}
             </p>
           </div>
           <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-white/[0.05]">
@@ -155,56 +180,52 @@ export default function PaymentsList() {
                   {pageItems.length === 0 ? (
                     <TableRow>
                       <td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No client invoices match your search.
+                        {isLoading ? "Loading…" : "No client invoices match your search."}
                       </td>
                     </TableRow>
                   ) : (
-                    pageItems.map((invoice) => {
-                      const status = getPaymentStatus(items, invoice);
-                      const ledgerStatus = invoice.status ?? "draft";
-                      return (
-                        <tr
-                          key={invoice.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => {
-                            setSelected(invoice);
+                    pageItems.map((inv) => (
+                      <tr
+                        key={inv.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          setSelectedId(Number(inv.id));
+                          setViewOpen(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedId(Number(inv.id));
                             setViewOpen(true);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setSelected(invoice);
-                              setViewOpen(true);
-                            }
-                          }}
-                          className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.03]"
-                        >
-                          <TableCell className="px-5 py-4 text-start text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                            {invoice.client.name}
-                          </TableCell>
-                          <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                            {invoice.reference}
-                          </TableCell>
-                          <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                            {formatDate(invoice.date)}
-                          </TableCell>
-                          <TableCell className="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-400 tabular-nums">
-                            {formatCurrency(invoice.amount)}
-                          </TableCell>
-                          <TableCell className="px-5 py-4 text-start">
-                            <Badge size="sm" color={ledgerStatus === "posted" ? "success" : "warning"}>
-                              {ledgerStatus === "posted" ? "Posted" : "Draft"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-5 py-4 text-start">
-                            <Badge size="sm" color={PAYMENT_STATUS_COLOR[status]}>
-                              {PAYMENT_STATUS_LABEL[status]}
-                            </Badge>
-                          </TableCell>
-                        </tr>
-                      );
-                    })
+                          }
+                        }}
+                        className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.03]"
+                      >
+                        <TableCell className="px-5 py-4 text-start text-theme-sm font-medium text-gray-800 dark:text-white/90">
+                          {inv.partyName}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
+                          {inv.reference ?? "—"}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
+                          {formatDate(inv.date)}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-end text-theme-sm text-gray-600 dark:text-gray-400 tabular-nums">
+                          {formatCurrency(inv.amount)}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-start">
+                          <Badge size="sm" color={inv.status === "posted" ? "success" : "warning"}>
+                            {inv.status === "posted" ? "Posted" : "Draft"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="px-5 py-4 text-start">
+                          <Badge size="sm" color={PAYMENT_STATUS_COLOR[inv.paymentStatus] ?? "warning"}>
+                            {PAYMENT_STATUS_LABEL[inv.paymentStatus] ?? inv.paymentStatus}
+                          </Badge>
+                        </TableCell>
+                      </tr>
+                    ))
                   )}
                 </TableBody>
               </Table>
@@ -224,61 +245,31 @@ export default function PaymentsList() {
           )}
         </ComponentCard>
       </div>
-      <PaymentViewModal
-        payment={selected}
+
+      <InvoiceViewModal
+        invoiceId={selectedId}
         isOpen={viewOpen}
         onClose={() => {
           setViewOpen(false);
-          setSelected(null);
+          setSelectedId(null);
         }}
-        onUpdate={handleUpdate}
-        onAddPayment={(invoice) => {
-          setInvoiceForPayment(invoice);
-          setViewOpen(false);
-          setAddPaymentOpen(true);
-        }}
-        onEdit={(invoice) => {
-          setInvoiceToEdit(invoice);
-          setViewOpen(false);
-          setEditInvoiceOpen(true);
-        }}
-        totalReceived={selected && !selected.invoiceId ? getTotalReceivedForInvoice(items, selected) : undefined}
-        receipts={selected && !selected.invoiceId ? getPaymentsForInvoice(items, selected.id) : []}
+        title="Client Invoice"
+        onEdit={handleEditFromView}
       />
-      <PaymentCreateModal
+
+      <InvoiceCreateModal
         isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
-        clients={MOCK_CLIENTS}
-        onCreate={(data) => {
-          setItems((prev) => [{ ...data, id: `p-${Date.now()}`, status: "draft" }, ...prev]);
-        }}
-      />
-      <PaymentCreateModal
-        isOpen={editInvoiceOpen}
         onClose={() => {
-          setEditInvoiceOpen(false);
+          setCreateOpen(false);
           setInvoiceToEdit(null);
         }}
-        clients={MOCK_CLIENTS}
-        onCreate={() => {}}
+        title="Client Invoice"
+        invoiceType={INVOICE_TYPE_CLIENT}
+        parties={clients}
+        projects={[]}
+        onCreate={handleCreate}
         invoiceToEdit={invoiceToEdit}
         onUpdate={handleUpdate}
-      />
-      <PaymentCreateModal
-        isOpen={addPaymentOpen}
-        onClose={() => {
-          setAddPaymentOpen(false);
-          setInvoiceForPayment(null);
-        }}
-        clients={MOCK_CLIENTS}
-        onCreate={(data) => {
-          const newId = `p-${Date.now()}`;
-          setItems((prev) => [
-            { ...data, id: newId, invoiceId: invoiceForPayment?.id }, ...prev,
-          ]);
-        }}
-        invoice={invoiceForPayment}
-        title="Add Payment"
       />
     </div>
   );
