@@ -12,4 +12,13 @@ if os.getenv("CORS_ALLOWED_ORIGINS"):
         if o.strip()
     ]
 
+# CSRF trusted origins (required for Django 4+ when using HTTPS or cross-origin)
+_csrf_origins = [
+    o.strip()
+    for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
+]
+if _csrf_origins:
+    CSRF_TRUSTED_ORIGINS = _csrf_origins
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
