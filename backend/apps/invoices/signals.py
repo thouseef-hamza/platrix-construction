@@ -1,8 +1,9 @@
 """
 Signals for invoices app.
 
-Client invoices (income): when a payment is posted:
-  Debit Cash (1010), Credit Construction Revenue (4010).
+Client invoices (receivables, accrual accounting):
+  1. When invoice is posted: Debit AR (1020), Credit Construction Revenue (4010) for full amount.
+  2. When payment is posted: Debit Cash (1010), Credit AR (1020) for payment amount.
 
 Subcontractor invoices (expense):
   1. When invoice is posted: Debit expense (5010 if project, else 5050),
@@ -25,6 +26,7 @@ from apps.accounting.models import ChartOfAccount, LedgerEntry, LedgerLine, get_
 
 from .constants import (
     COA_CODE_ACCOUNTS_PAYABLE,
+    COA_CODE_ACCOUNTS_RECEIVABLE,
     COA_CODE_CASH_BANK,
     COA_CODE_CONSTRUCTION_REVENUE,
     COA_CODE_PROJECT_EXPENSE,
@@ -47,12 +49,67 @@ def _get_coa_by_code(account, code):
     ).first()
 
 
+@receiver(post_save, sender=Invoice)
+def on_client_invoice_posted_create_ledger_entry(sender, instance, created, **kwargs):
+    """
+    When a CLIENT invoice is posted, create LedgerEntry:
+    Debit AR (1020), Credit Construction Revenue (4010) for full amount.
+    Revenue is recognized when invoice is posted; AR holds the receivable.
+    """
+    if instance.invoice_type != INVOICE_TYPE_CLIENT:
+        return
+    if instance.status != INVOICE_STATUS_POSTED:
+        return
+    if instance.is_deleted:
+        return
+    ref = f"ClientInvoice-{instance.id}"
+    if LedgerEntry.objects.filter(account=instance.account, reference=ref).exists():
+        return
+    amount = instance.amount or Decimal("0.00")
+    if amount <= 0:
+        return
+    ar_coa = _get_coa_by_code(instance.account, COA_CODE_ACCOUNTS_RECEIVABLE)
+    revenue_coa = _get_coa_by_code(instance.account, COA_CODE_CONSTRUCTION_REVENUE)
+    if not ar_coa or not revenue_coa:
+        return
+    desc = instance.reference or f"Client invoice – {instance.reference}"
+    with transaction.atomic():
+        entry_number = get_next_entry_number(instance.account, source=ENTRY_SOURCE_INVOICE)
+        entry = LedgerEntry.objects.create(
+            account=instance.account,
+            entry_number=entry_number,
+            entry_date=instance.date,
+            posting_date=instance.date,
+            description=f"Client invoice – {instance.reference} – {instance.party.name}",
+            reference=ref,
+            source=ENTRY_SOURCE_INVOICE,
+            status=ENTRY_STATUS_POSTED,
+            posted_at=timezone.now(),
+        )
+        LedgerLine.objects.create(
+            entry=entry,
+            chart_of_account=ar_coa,
+            line_number=1,
+            description=desc,
+            debit=amount,
+            credit=Decimal("0.00"),
+        )
+        LedgerLine.objects.create(
+            entry=entry,
+            chart_of_account=revenue_coa,
+            line_number=2,
+            description=desc,
+            debit=Decimal("0.00"),
+            credit=amount,
+        )
+
+
 @receiver(post_save, sender=InvoicePayment)
 def on_client_invoice_payment_posted_create_ledger_entry(sender, instance, created, **kwargs):
     """
     When a payment is posted (status=posted) on a posted CLIENT invoice,
-    create LedgerEntry: Debit Cash (1010), Credit Construction Revenue (4010).
-    Construction revenue increases by the paid amount.
+    create LedgerEntry: Debit Cash (1010), Credit AR (1020).
+    Payment reduces the receivable and increases cash.
     """
     if instance.is_deleted:
         return
@@ -70,20 +127,20 @@ def on_client_invoice_payment_posted_create_ledger_entry(sender, instance, creat
     if LedgerEntry.objects.filter(account=invoice.account, reference=ref).exists():
         return
     cash_coa = _get_coa_by_code(invoice.account, COA_CODE_CASH_BANK)
-    revenue_coa = _get_coa_by_code(invoice.account, COA_CODE_CONSTRUCTION_REVENUE)
-    if not cash_coa or not revenue_coa:
+    ar_coa = _get_coa_by_code(invoice.account, COA_CODE_ACCOUNTS_RECEIVABLE)
+    if not cash_coa or not ar_coa:
         return
     desc = instance.reference or f"Client invoice payment – {invoice.reference}"
     with transaction.atomic():
-        entry_number = get_next_entry_number(invoice.account, source=ENTRY_SOURCE_INVOICE)
+        entry_number = get_next_entry_number(invoice.account, source=ENTRY_SOURCE_PAYMENT)
         entry = LedgerEntry.objects.create(
             account=invoice.account,
             entry_number=entry_number,
             entry_date=instance.date,
             posting_date=instance.date,
-            description=f"Client invoice – {invoice.reference} – {invoice.party.name}",
+            description=f"Client invoice payment – {invoice.reference} – {invoice.party.name}",
             reference=ref,
-            source=ENTRY_SOURCE_INVOICE,
+            source=ENTRY_SOURCE_PAYMENT,
             status=ENTRY_STATUS_POSTED,
             posted_at=timezone.now(),
         )
@@ -97,7 +154,7 @@ def on_client_invoice_payment_posted_create_ledger_entry(sender, instance, creat
         )
         LedgerLine.objects.create(
             entry=entry,
-            chart_of_account=revenue_coa,
+            chart_of_account=ar_coa,
             line_number=2,
             description=desc,
             debit=Decimal("0.00"),

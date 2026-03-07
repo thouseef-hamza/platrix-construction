@@ -9,6 +9,9 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import AccountUser
 from apps.core.models import Document
+from apps.expenses.constants import EXPENSE_CATEGORY_EMPLOYEE_PAID
+from apps.expenses.models import Expense
+from apps.expenses.serializers import ExpenseListSerializer
 
 from .constants import SALARY_ENTRY_STATUS_DRAFT
 from .models import Employee, EmployeeSalaryEntry, EmployeeTransaction
@@ -179,6 +182,30 @@ class EmployeeSalaryDetailAPIView(APIView):
         entry.is_deleted = True
         entry.save(update_fields=["is_deleted", "updated_at"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EmployeeExpenseListAPIView(APIView):
+    """GET list of employee-paid expenses for this employee. Requires x-account-id header."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        if _current_account_id(request) is None:
+            return Response(
+                {"detail": "x-account-id header is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        employee = get_object_or_404(get_employee_queryset(request), pk=pk)
+        if employee.account_id not in user_account_ids(request):
+            raise PermissionDenied("You do not have access to this account.")
+        expenses = Expense.objects.filter(
+            account_id=employee.account_id,
+            category=EXPENSE_CATEGORY_EMPLOYEE_PAID,
+            employee_id=str(employee.pk),
+            is_deleted=False,
+        ).select_related("project").order_by("-date", "-id")
+        serializer = ExpenseListSerializer(expenses, many=True)
+        return Response(serializer.data)
 
 
 class EmployeeTransactionListCreateAPIView(APIView):

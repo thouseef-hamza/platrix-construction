@@ -98,6 +98,7 @@ nano .env.prod
 | `POSTGRES_USER` | Same as `DB_USER` | `bfuser` |
 | `POSTGRES_PASSWORD` | Same as `DB_PASSWORD` | (same as above) |
 | `CORS_ALLOWED_ORIGINS` | Frontend URLs (comma-separated) | `https://yourdomain.com,https://app.yourdomain.com` |
+| `CSRF_TRUSTED_ORIGINS` | **Required for Django 4+** – API + frontend URLs (comma-separated) | `https://api.yourdomain.com,https://yourdomain.com` or `http://YOUR_IP` for IP-only |
 
 **Generate SECRET_KEY:**
 
@@ -127,6 +128,9 @@ POSTGRES_PASSWORD=your-strong-db-password
 
 # CORS (comma-separated frontend origins)
 CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
+
+# CSRF (required for Django 4+ – include API URL and any frontend that POSTs to API)
+CSRF_TRUSTED_ORIGINS=https://api.yourdomain.com,https://yourdomain.com
 ```
 
 ---
@@ -279,6 +283,13 @@ Migrations run automatically on startup. If you add new migrations, they will be
 ### CORS errors from frontend
 
 - Add your frontend URL(s) to `CORS_ALLOWED_ORIGINS` in `.env.prod`
+- Restart app: `docker compose -f docker-compose.prod.yml restart app`
+
+### CSRF verification failed / 403 Forbidden
+
+- Add `CSRF_TRUSTED_ORIGINS` to `.env.prod` with your actual URLs (comma-separated)
+- **HTTPS:** `CSRF_TRUSTED_ORIGINS=https://api.yourdomain.com,https://yourdomain.com`
+- **IP-only (HTTP):** `CSRF_TRUSTED_ORIGINS=http://YOUR_DROPLET_IP`
 - Restart app: `docker compose -f docker-compose.prod.yml restart app`
 
 ---

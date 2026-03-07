@@ -213,12 +213,41 @@ export interface ProjectFinancialTransaction {
   description: string;
   amount: number;
   type: "income" | "expense";
+  /** For invoice-payment and subcontractor-invoice */
+  invoice_id?: number;
+  /** For expense */
+  expense_id?: number;
+  /** For purchase */
+  purchase_id?: number;
+}
+
+/** One client invoice with unpaid balance (from where you get the fund). */
+export interface ReceivablesBreakdownItem {
+  id: number;
+  reference: string;
+  party_name: string;
+  unpaid: number;
+  date: string;
+}
+
+/** One payable: subcontractor invoice, expense, or purchase (who to pay). */
+export interface PayablesBreakdownItem {
+  type: "subcontractor_invoice" | "expense" | "purchase";
+  id: number;
+  reference: string;
+  payee_name: string;
+  unpaid: number;
+  date: string;
 }
 
 export interface ProjectFinancialSummary {
   income: number;
   expense: number;
   variation: number;
+  receivables: number;
+  payables: number;
+  receivables_breakdown: ReceivablesBreakdownItem[];
+  payables_breakdown: PayablesBreakdownItem[];
   transactions: ProjectFinancialTransaction[];
 }
 
@@ -228,7 +257,18 @@ export async function fetchProjectFinancials(
   const { data } = await api.get<ProjectFinancialSummary>(
     `/projects/${projectId}/financial/`
   );
-  return data ?? { income: 0, expense: 0, variation: 0, transactions: [] };
+  return (
+    data ?? {
+      income: 0,
+      expense: 0,
+      variation: 0,
+      receivables: 0,
+      payables: 0,
+      receivables_breakdown: [],
+      payables_breakdown: [],
+      transactions: [],
+    }
+  );
 }
 
 /** Download a project document as a file (no new tab). Uses API so auth is sent. */

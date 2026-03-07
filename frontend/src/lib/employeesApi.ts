@@ -371,6 +371,46 @@ export async function fetchEmployeeTransactions(employeeId: number): Promise<Emp
   }));
 }
 
+/** Employee-paid expense (from expenses where employee paid on behalf of company) */
+export interface EmployeePaidExpense {
+  id: number;
+  date: string;
+  amount: number;
+  paidAmount: number;
+  description: string;
+  status: string;
+  statusDisplay?: string;
+  projectName?: string | null;
+  reference?: string;
+}
+
+interface ApiEmployeeExpense {
+  id: number;
+  date: string;
+  amount: string;
+  paid_amount: string;
+  description: string;
+  status: number;
+  status_display?: string;
+  project_name?: string | null;
+  reference?: string;
+}
+
+export async function fetchEmployeeExpenses(employeeId: number): Promise<EmployeePaidExpense[]> {
+  const { data } = await api.get<ApiEmployeeExpense[]>(`/employees/${employeeId}/expenses/`);
+  return (data ?? []).map((e) => ({
+    id: e.id,
+    date: e.date,
+    amount: parseFloat(e.amount) || 0,
+    paidAmount: parseFloat(e.paid_amount) || 0,
+    description: e.description || "",
+    status: e.status_display ?? String(e.status),
+    statusDisplay: e.status_display,
+    projectName: e.project_name ?? null,
+    reference: e.reference ?? undefined,
+  }));
+}
+
 // --- Employee documents (list, upload, download, delete) ---
 
 export interface EmployeeDocument {

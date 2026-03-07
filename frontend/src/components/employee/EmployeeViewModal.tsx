@@ -14,10 +14,20 @@ import {
   deleteEmployeeDocument,
   downloadEmployeeDocument,
   fetchEmployeeDocuments,
+  fetchEmployeeExpenses,
   uploadEmployeeDocument,
 } from "@/lib/employeesApi";
+import {
+  getExpense,
+  updateExpense,
+  addExpensePayment,
+  patchExpensePayment,
+  deleteExpensePayment,
+} from "@/lib/expensesApi";
+import type { Expense } from "@/types/expense";
 import AddSalaryEntryModal from "./AddSalaryEntryModal";
 import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
+import ExpenseViewModal from "@/components/expense/ExpenseViewModal";
 
 type Tab =
   | "details"
@@ -96,6 +106,7 @@ export default function EmployeeViewModal({
   const [entryToEdit, setEntryToEdit] = useState<EmployeeSalaryEntry | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<EmployeeSalaryEntry | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<EmployeeDocument | null>(null);
+  const [selectedExpenseId, setSelectedExpenseId] = useState<number | null>(null);
   const [previewDocument, setPreviewDocument] = useState<{
     name: string;
     url: string | null;
@@ -113,6 +124,98 @@ export default function EmployeeViewModal({
     queryFn: () => fetchEmployeeDocuments(employeeIdNum!),
     enabled: isOpen && employeeIdNum != null,
   });
+  const { data: employeeExpenses = [], isLoading: expensesLoading } = useQuery({
+    queryKey: ["employee-expenses", employeeIdNum],
+    queryFn: () => fetchEmployeeExpenses(employeeIdNum!),
+    enabled: isOpen && employeeIdNum != null && activeTab === "financial",
+  });
+  const { data: expenseForModal = null } = useQuery({
+    queryKey: ["expense", selectedExpenseId],
+    queryFn: () => getExpense(selectedExpenseId!),
+    enabled: selectedExpenseId != null,
+  });
+  const updateExpenseMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: Parameters<typeof updateExpense>[1];
+    }) => updateExpense(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["expense", String(id)] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses", employeeIdNum] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+    },
+  });
+  const addPaymentMutation = useMutation({
+    mutationFn: ({
+      expenseId,
+      payload,
+    }: {
+      expenseId: number;
+      payload: Parameters<typeof addExpensePayment>[1];
+    }) => addExpensePayment(expenseId, payload),
+    onSuccess: (_, { expenseId }) => {
+      queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses", employeeIdNum] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+    },
+  });
+  const patchPaymentMutation = useMutation({
+    mutationFn: ({
+      expenseId,
+      paymentId,
+      payload,
+    }: {
+      expenseId: number;
+      paymentId: number;
+      payload: Parameters<typeof patchExpensePayment>[2];
+    }) => patchExpensePayment(expenseId, paymentId, payload),
+    onSuccess: (_, { expenseId }) => {
+      queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses", employeeIdNum] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+    },
+  });
+  const deletePaymentMutation = useMutation({
+    mutationFn: ({ expenseId, paymentId }: { expenseId: number; paymentId: number }) =>
+      deleteExpensePayment(expenseId, paymentId),
+    onSuccess: (_, { expenseId }) => {
+      queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses", employeeIdNum] });
+      queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+    },
+  });
+
+  const handleExpenseUpdate = (id: string, updates: Partial<Expense>) => {
+    const expenseId = Number(id);
+    if (updates.status === "posted") {
+      updateExpenseMutation.mutate({ id: expenseId, payload: { status: "posted" } });
+      return;
+    }
+    if (
+      updates.payments != null &&
+      updates.paidAmount != null &&
+      selectedExpenseId === expenseId &&
+      expenseForModal &&
+      updates.payments.length > (expenseForModal.payments?.length ?? 0)
+    ) {
+      const newPayment = updates.payments[updates.payments.length - 1];
+      if (newPayment)
+        addPaymentMutation.mutate({
+          expenseId,
+          payload: {
+            date: newPayment.date,
+            amount: newPayment.amount,
+            reference: newPayment.reference,
+            status: newPayment.status ?? "draft",
+          },
+        });
+      return;
+    }
+  };
+
   const uploadDocMutation = useMutation({
     mutationFn: ({
       employeeId,
@@ -386,6 +489,61 @@ export default function EmployeeViewModal({
                             .join(" · ")}
                         </span>
                       )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <h4 className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Employee-paid expenses
+              </h4>
+              {expensesLoading ? (
+                <p className="rounded-xl border border-dashed border-gray-300 py-4 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+                  Loading…
+                </p>
+              ) : employeeExpenses.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-gray-300 py-4 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+                  No employee-paid expenses.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {employeeExpenses.map((exp) => (
+                    <li
+                      key={`expense-${exp.id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-white/[0.03]"
+                    >
+                      <span className="text-gray-700 dark:text-gray-300">
+                        {formatDate(exp.date)}
+                      </span>
+                      <span className="font-medium tabular-nums text-gray-900 dark:text-white">
+                        {formatCurrency(exp.amount)}
+                      </span>
+                      <span className="w-full text-gray-500 dark:text-gray-400 sm:w-auto">
+                        {exp.description || exp.reference || "—"}
+                      </span>
+                      {exp.projectName && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {exp.projectName}
+                        </span>
+                      )}
+                      {exp.statusDisplay && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {exp.statusDisplay}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedExpenseId(exp.id)}
+                        title="View expense"
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300 shrink-0"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -694,6 +852,36 @@ export default function EmployeeViewModal({
         </div>
       )}
     </Modal>
+    <ExpenseViewModal
+      expense={expenseForModal ?? null}
+      isOpen={selectedExpenseId != null && expenseForModal != null}
+      onClose={() => setSelectedExpenseId(null)}
+      onUpdate={handleExpenseUpdate}
+      onPostPayment={(expenseId, paymentId) =>
+        patchPaymentMutation.mutate({
+          expenseId: Number(expenseId),
+          paymentId: Number(paymentId),
+          payload: { status: "posted" },
+        })
+      }
+      onEditPayment={(expenseId, paymentId, payload) =>
+        patchPaymentMutation.mutate({
+          expenseId: Number(expenseId),
+          paymentId: Number(paymentId),
+          payload: {
+            date: payload.date,
+            amount: payload.amount,
+            reference: payload.reference ?? "",
+          },
+        })
+      }
+      onDeletePayment={(expenseId, paymentId) =>
+        deletePaymentMutation.mutate({
+          expenseId: Number(expenseId),
+          paymentId: Number(paymentId),
+        })
+      }
+    />
     </>
   );
 }

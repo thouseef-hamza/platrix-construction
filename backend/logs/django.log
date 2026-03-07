@@ -4390,3 +4390,35 @@ Watching for file changes with StatReloader
 Watching for file changes with StatReloader
 /home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/reports/views_dashboard.py changed, reloading.
 Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Unauthorized: /api/reports/project-pnl/
+Bad Request: /api/employees/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/config/settings/base.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Unauthorized: /api/dashboard/
+Unauthorized: /api/projects/
+Unauthorized: /api/companies/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/employees/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
+Unauthorized: /api/invoices/3/
+Unauthorized: /api/invoices/3/documents/
+Bad Request: /api/expenses/1/payments/
+Bad Request: /api/expenses/1/payments/
+/home/wiralthouseef/Desktop/Thouseef/bf-software-django/backend/apps/projects/views.py changed, reloading.
+Watching for file changes with StatReloader
