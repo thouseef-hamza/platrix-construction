@@ -115,6 +115,7 @@ export default function ExpensesList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses"] });
     },
   });
   const updateMutation = useMutation({
@@ -129,6 +130,7 @@ export default function ExpensesList() {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(id)] });
       queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses"] });
     },
   });
   const addPaymentMutation = useMutation({
@@ -143,6 +145,7 @@ export default function ExpensesList() {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
       queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses"] });
     },
   });
   const patchPaymentMutation = useMutation({
@@ -159,6 +162,7 @@ export default function ExpensesList() {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
       queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses"] });
     },
   });
   const deletePaymentMutation = useMutation({
@@ -168,6 +172,7 @@ export default function ExpensesList() {
       queryClient.invalidateQueries({ queryKey: [EXPENSES_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ["expense", String(expenseId)] });
       queryClient.invalidateQueries({ queryKey: ["project-financials"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-expenses"] });
     },
   });
 

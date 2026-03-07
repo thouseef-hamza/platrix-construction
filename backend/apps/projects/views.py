@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Sum
+from django.db.models import F, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -298,6 +298,38 @@ class ProjectFinancialAPIView(APIView):
 
         variation = income - expense
 
+        # Receivables: unpaid balance on posted client invoices for this project
+        receivables_result = Invoice.objects.filter(
+            project_id=pk,
+            invoice_type=INVOICE_TYPE_CLIENT,
+            status=INVOICE_STATUS_POSTED,
+            is_deleted=False,
+        ).aggregate(total=Sum(F("amount") - F("paid_amount")))
+        receivables = float(receivables_result["total"] or Decimal("0.00"))
+
+        # Payables: unpaid balance on posted subcontractor invoices + expenses + purchases
+        sub_payables_result = Invoice.objects.filter(
+            project_id=pk,
+            invoice_type=INVOICE_TYPE_SUBCONTRACTOR,
+            status=INVOICE_STATUS_POSTED,
+            is_deleted=False,
+        ).aggregate(total=Sum(F("amount") - F("paid_amount")))
+        exp_payables_result = Expense.objects.filter(
+            project_id=pk,
+            status=EXPENSE_STATUS_POSTED,
+            is_deleted=False,
+        ).aggregate(total=Sum(F("amount") - F("paid_amount")))
+        pur_payables_result = Purchase.objects.filter(
+            project_id=pk,
+            status=PURCHASE_STATUS_POSTED,
+            is_deleted=False,
+        ).aggregate(total=Sum(F("amount") - F("paid_amount")))
+        payables = (
+            float(sub_payables_result["total"] or Decimal("0.00"))
+            + float(exp_payables_result["total"] or Decimal("0.00"))
+            + float(pur_payables_result["total"] or Decimal("0.00"))
+        )
+
         # Build transactions list (payment entries)
         transactions = []
 
@@ -318,6 +350,7 @@ class ProjectFinancialAPIView(APIView):
                 "description": f"Client invoice – {ip.invoice.reference} – {ip.invoice.party.name}",
                 "amount": amt,
                 "type": "income",
+                "invoice_id": ip.invoice_id,
             })
 
         for inv in Invoice.objects.filter(
@@ -335,6 +368,7 @@ class ProjectFinancialAPIView(APIView):
                 "description": f"Subcontractor invoice – {inv.reference} – {inv.party.name}",
                 "amount": -amt,
                 "type": "expense",
+                "invoice_id": inv.id,
             })
 
         for exp in Expense.objects.filter(
@@ -353,6 +387,7 @@ class ProjectFinancialAPIView(APIView):
                 "description": f"Expense – {desc} – {payee}",
                 "amount": -amt,
                 "type": "expense",
+                "expense_id": exp.id,
             })
 
         for pur in Purchase.objects.filter(
@@ -369,14 +404,93 @@ class ProjectFinancialAPIView(APIView):
                 "description": f"Purchase – {pur.reference} – {pur.supplier.name}",
                 "amount": -amt,
                 "type": "expense",
+                "purchase_id": pur.id,
             })
 
         transactions.sort(key=lambda t: (t["date"], t["id"]), reverse=True)
+
+        # Receivables breakdown: client invoices with unpaid balance (from where you get the fund)
+        receivables_breakdown = []
+        for inv in Invoice.objects.filter(
+            project_id=pk,
+            invoice_type=INVOICE_TYPE_CLIENT,
+            status=INVOICE_STATUS_POSTED,
+            is_deleted=False,
+        ).select_related("party").order_by("-date", "-id"):
+            unpaid = float((inv.amount or Decimal("0.00")) - (inv.paid_amount or Decimal("0.00")))
+            if unpaid <= 0:
+                continue
+            receivables_breakdown.append({
+                "id": inv.id,
+                "reference": inv.reference or "",
+                "party_name": inv.party.name if inv.party else "",
+                "unpaid": round(unpaid, 2),
+                "date": inv.date.isoformat(),
+            })
+
+        # Payables breakdown: subcontractor invoices, expenses, purchases with unpaid (who to pay)
+        payables_breakdown = []
+        for inv in Invoice.objects.filter(
+            project_id=pk,
+            invoice_type=INVOICE_TYPE_SUBCONTRACTOR,
+            status=INVOICE_STATUS_POSTED,
+            is_deleted=False,
+        ).select_related("party").order_by("-date", "-id"):
+            unpaid = float((inv.amount or Decimal("0.00")) - (inv.paid_amount or Decimal("0.00")))
+            if unpaid <= 0:
+                continue
+            payables_breakdown.append({
+                "type": "subcontractor_invoice",
+                "id": inv.id,
+                "reference": inv.reference or "",
+                "payee_name": inv.party.name if inv.party else "",
+                "unpaid": round(unpaid, 2),
+                "date": inv.date.isoformat(),
+            })
+        for exp in Expense.objects.filter(
+            project_id=pk,
+            status=EXPENSE_STATUS_POSTED,
+            is_deleted=False,
+        ).select_related("payee").order_by("-date", "-id"):
+            unpaid = float((exp.amount or Decimal("0.00")) - (exp.paid_amount or Decimal("0.00")))
+            if unpaid <= 0:
+                continue
+            payee_name = exp.payee.name if exp.payee else (exp.employee_name or "Expense")
+            ref = (exp.reference or (exp.description or "")[:50] or "Expense").strip()
+            payables_breakdown.append({
+                "type": "expense",
+                "id": exp.id,
+                "reference": ref,
+                "payee_name": payee_name,
+                "unpaid": round(unpaid, 2),
+                "date": exp.date.isoformat(),
+            })
+        for pur in Purchase.objects.filter(
+            project_id=pk,
+            status=PURCHASE_STATUS_POSTED,
+            is_deleted=False,
+        ).select_related("supplier").order_by("-date", "-id"):
+            unpaid = float((pur.amount or Decimal("0.00")) - (pur.paid_amount or Decimal("0.00")))
+            if unpaid <= 0:
+                continue
+            payables_breakdown.append({
+                "type": "purchase",
+                "id": pur.id,
+                "reference": pur.reference or "",
+                "payee_name": pur.supplier.name if pur.supplier else "",
+                "unpaid": round(unpaid, 2),
+                "date": pur.date.isoformat(),
+            })
+        payables_breakdown.sort(key=lambda x: (x["date"], x["type"], x["id"]), reverse=True)
 
         return Response({
             "income": round(income, 2),
             "expense": round(expense, 2),
             "variation": round(variation, 2),
+            "receivables": round(receivables, 2),
+            "payables": round(payables, 2),
+            "receivables_breakdown": receivables_breakdown,
+            "payables_breakdown": payables_breakdown,
             "transactions": transactions,
         })
 

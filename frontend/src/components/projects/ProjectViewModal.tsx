@@ -22,7 +22,13 @@ import {
   fetchProjectFinancials,
   uploadProjectDocument,
   type ProjectDocument,
+  type ProjectFinancialTransaction,
 } from "@/lib/projectsApi";
+import { getExpense } from "@/lib/expensesApi";
+import { getPurchase } from "@/lib/purchasesApi";
+import InvoiceViewModal from "@/components/invoice/InvoiceViewModal";
+import ExpenseViewModal from "@/components/expense/ExpenseViewModal";
+import PurchaseViewModal from "@/components/purchase/PurchaseViewModal";
 import {
   PROJECT_TYPES,
   PROJECT_STATUSES,
@@ -140,6 +146,10 @@ export default function ProjectViewModal({
   const [uploadName, setUploadName] = useState("");
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
+  const [invoiceModalType, setInvoiceModalType] = useState<0 | 1>(0);
+  const [selectedExpenseId, setSelectedExpenseId] = useState<number | null>(null);
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
   const projectIdNum = project?.id != null ? Number(project.id) : null;
@@ -158,6 +168,16 @@ export default function ProjectViewModal({
     queryKey: ["project-financials", projectIdNum],
     queryFn: () => fetchProjectFinancials(projectIdNum!),
     enabled: isOpen && projectIdNum != null,
+  });
+  const { data: expenseForModal = null } = useQuery({
+    queryKey: ["expense", selectedExpenseId],
+    queryFn: () => getExpense(selectedExpenseId!),
+    enabled: selectedExpenseId != null,
+  });
+  const { data: purchaseForModal = null } = useQuery({
+    queryKey: ["purchase", selectedPurchaseId],
+    queryFn: () => getPurchase(selectedPurchaseId!),
+    enabled: selectedPurchaseId != null,
   });
   const uploadDocMutation = useMutation({
     mutationFn: ({
@@ -196,6 +216,10 @@ export default function ProjectViewModal({
   const income = financials?.income ?? 0;
   const expenses = financials?.expense ?? 0;
   const variation = financials?.variation ?? 0;
+  const receivables = financials?.receivables ?? 0;
+  const payables = financials?.payables ?? 0;
+  const receivablesBreakdown = financials?.receivables_breakdown ?? [];
+  const payablesBreakdown = financials?.payables_breakdown ?? [];
   const financialTransactions = financials?.transactions ?? [];
   const recentTransactions = financialTransactions.slice(0, 5);
   const { monthlyInvoices, monthlyExpenses } = useMonthlyBreakdown(financialTransactions);
@@ -266,6 +290,32 @@ export default function ProjectViewModal({
     onAddComment(project.id, msg);
     setNewComment("");
   };
+
+  const handleViewTransaction = (tx: ProjectFinancialTransaction) => {
+    if (tx.invoice_id != null) {
+      setSelectedInvoiceId(tx.invoice_id);
+      setInvoiceModalType(tx.type === "income" ? 0 : 1);
+      setSelectedExpenseId(null);
+      setSelectedPurchaseId(null);
+    } else if (tx.expense_id != null) {
+      setSelectedExpenseId(tx.expense_id);
+      setSelectedInvoiceId(null);
+      setSelectedPurchaseId(null);
+    } else if (tx.purchase_id != null) {
+      setSelectedPurchaseId(tx.purchase_id);
+      setSelectedInvoiceId(null);
+      setSelectedExpenseId(null);
+    }
+  };
+
+  const closeTransactionModals = () => {
+    setSelectedInvoiceId(null);
+    setSelectedExpenseId(null);
+    setSelectedPurchaseId(null);
+  };
+
+  const canViewTransaction = (tx: ProjectFinancialTransaction) =>
+    tx.invoice_id != null || tx.expense_id != null || tx.purchase_id != null;
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "dashboard", label: "Dashboard" },
@@ -612,7 +662,7 @@ export default function ProjectViewModal({
               <p className="text-sm text-gray-500 dark:text-gray-400 py-8">Loading financial data…</p>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 w-full">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 w-full">
                   <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Income</p>
                     <p className="mt-2 text-2xl font-semibold text-success-600 dark:text-success-400 tabular-nums">
@@ -634,7 +684,153 @@ export default function ProjectViewModal({
                     </p>
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Income − Expense</p>
                   </div>
+                  <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Receivables</p>
+                    <p className="mt-2 text-2xl font-semibold text-blue-light-600 dark:text-blue-light-400 tabular-nums">
+                      {formatBudget(receivables)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Unpaid client invoices</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] w-full">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Payables</p>
+                    <p className="mt-2 text-2xl font-semibold text-warning-600 dark:text-warning-400 tabular-nums">
+                      {formatBudget(payables)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Unpaid subcontractor, expenses, purchases</p>
+                  </div>
                 </div>
+
+                {/* Receivables breakdown: from where you get the fund */}
+                <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+                  <h3 className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-white bg-gray-50 dark:bg-white/[0.04] border-b border-gray-200 dark:border-gray-800">
+                    From where you get the fund (receivables)
+                  </h3>
+                  <Table>
+                    <TableHeader className="border-b border-gray-200 dark:border-gray-800">
+                      <TableRow>
+                        <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Client</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Reference</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-right text-theme-xs font-medium text-gray-500 dark:text-gray-400">Unpaid</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-20">Actions</TableCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {receivablesBreakdown.length === 0 ? (
+                        <TableRow>
+                          <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                            No unpaid client invoices for this project.
+                          </td>
+                        </TableRow>
+                      ) : (
+                        receivablesBreakdown.map((item) => (
+                          <TableRow key={`receivable-${item.id}`} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                            <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                              {item.party_name || "—"}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                              {item.reference || "—"}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-right tabular-nums font-medium text-blue-light-600 dark:text-blue-light-400">
+                              {formatBudget(item.unpaid)}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setInvoiceModalType(0);
+                                  setSelectedInvoiceId(item.id);
+                                  setSelectedExpenseId(null);
+                                  setSelectedPurchaseId(null);
+                                }}
+                                title="View invoice"
+                                className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Payables breakdown: who to pay */}
+                <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+                  <h3 className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-white bg-gray-50 dark:bg-white/[0.04] border-b border-gray-200 dark:border-gray-800">
+                    Who to pay (payables)
+                  </h3>
+                  <Table>
+                    <TableHeader className="border-b border-gray-200 dark:border-gray-800">
+                      <TableRow>
+                        <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Type</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Pay to</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Reference</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-right text-theme-xs font-medium text-gray-500 dark:text-gray-400">Unpaid</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-20">Actions</TableCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {payablesBreakdown.length === 0 ? (
+                        <TableRow>
+                          <td colSpan={5} className="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                            No unpaid subcontractor invoices, expenses, or purchases for this project.
+                          </td>
+                        </TableRow>
+                      ) : (
+                        payablesBreakdown.map((item) => (
+                          <TableRow key={`${item.type}-${item.id}`} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                            <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                              {item.type === "subcontractor_invoice"
+                                ? "Subcontractor"
+                                : item.type === "expense"
+                                  ? "Expense"
+                                  : "Purchase"}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                              {item.payee_name || "—"}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                              {item.reference || "—"}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-right tabular-nums font-medium text-warning-600 dark:text-warning-400">
+                              {formatBudget(item.unpaid)}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedInvoiceId(null);
+                                  setSelectedExpenseId(null);
+                                  setSelectedPurchaseId(null);
+                                  if (item.type === "subcontractor_invoice") {
+                                    setInvoiceModalType(1);
+                                    setSelectedInvoiceId(item.id);
+                                  } else if (item.type === "expense") {
+                                    setSelectedExpenseId(item.id);
+                                  } else {
+                                    setSelectedPurchaseId(item.id);
+                                  }
+                                }}
+                                title="View details"
+                                className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
                 <div className="w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
                   <h3 className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-white bg-gray-50 dark:bg-white/[0.04] border-b border-gray-200 dark:border-gray-800">
                     Financial transactions (payment entries)
@@ -645,12 +841,13 @@ export default function ProjectViewModal({
                         <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Date</TableCell>
                         <TableCell isHeader className="px-4 py-3 text-left text-theme-xs font-medium text-gray-500 dark:text-gray-400">Description</TableCell>
                         <TableCell isHeader className="px-4 py-3 text-right text-theme-xs font-medium text-gray-500 dark:text-gray-400">Amount</TableCell>
+                        <TableCell isHeader className="px-4 py-3 text-center text-theme-xs font-medium text-gray-500 dark:text-gray-400 w-12">Actions</TableCell>
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                       {financialTransactions.length === 0 ? (
                         <TableRow>
-                          <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                          <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                             No payment entries yet for this project.
                           </td>
                         </TableRow>
@@ -665,6 +862,23 @@ export default function ProjectViewModal({
                             </TableCell>
                             <TableCell className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${tx.type === "income" ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
                               {tx.type === "income" ? "+" : "-"}{formatBudget(tx.type === "income" ? tx.amount : Math.abs(tx.amount))}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-center">
+                              {canViewTransaction(tx) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleViewTransaction(tx)}
+                                  title="View details"
+                                  className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-300"
+                                >
+                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                </button>
+                              ) : (
+                                <span className="text-gray-300 dark:text-gray-600">—</span>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))
@@ -705,6 +919,23 @@ export default function ProjectViewModal({
       </div>
     </Modal>
 
+    <InvoiceViewModal
+      invoiceId={selectedInvoiceId}
+      isOpen={selectedInvoiceId != null}
+      onClose={closeTransactionModals}
+      title={invoiceModalType === 0 ? "Client Invoice" : "Subcontractor Invoice"}
+      invoiceType={invoiceModalType}
+    />
+    <ExpenseViewModal
+      expense={expenseForModal ?? null}
+      isOpen={selectedExpenseId != null && expenseForModal != null}
+      onClose={closeTransactionModals}
+    />
+    <PurchaseViewModal
+      purchase={purchaseForModal ?? null}
+      isOpen={selectedPurchaseId != null && purchaseForModal != null}
+      onClose={closeTransactionModals}
+    />
     <Modal
       isOpen={!!previewDocument}
       onClose={() => setPreviewDocument(null)}

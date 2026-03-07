@@ -7,7 +7,7 @@ export const API_BASE_URL =
 
 let authToken: string | null = null;
 let storedRefreshToken: string | null = null;
-let currentAccountId: number | null = null;
+let currentAccountId: number | null = null; 
 
 /** Set the JWT for the axios instance. Call from AuthContext on login/logout. */
 export function setAuthToken(token: string | null) {
